@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrimeVault | Investigation Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/app.js" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">CV</div>
+                <div>
+                    <h2>CrimeVault</h2>
+                    <p>Investigation System</p>
+                </div>
+            </div>
+
+            <p class="nav-label">WORKSPACE</p>
+            <nav class="navigation">
+                <a href="#dashboard" class="nav-link active" data-view="dashboard">▦ Dashboard</a>
+                <a href="#cases" class="nav-link" data-view="cases">▣ Cases</a>
+                <a href="#investigators" class="nav-link" data-view="investigators">♙ Investigators</a>
+                <a href="#people" class="nav-link" data-view="people">♧ People</a>
+                <a href="#evidence" class="nav-link" data-view="evidence">◈ Evidence & Custody</a>
+                <a href="#forensics" class="nav-link" data-view="forensics">⌕ Interviews & Forensics</a>
+                <a href="#timeline" class="nav-link" data-view="timeline">◷ Investigation Timeline</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-dot"></div>
+                <div>
+                    <strong>CrimeVault Demo</strong>
+                    <p>Frontend prototype</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">CRIME INVESTIGATION PLATFORM</p>
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="topbar-right">
+                    <span class="demo-badge">DEMO DATA</span>
+                    <div class="avatar">CV</div>
+                </div>
+            </header>
+
+            <section class="welcome-panel">
+                <div>
+                    <p class="eyebrow">INVESTIGATION OVERVIEW</p>
+                    <h2>Welcome to CrimeVault.</h2>
+                    <p>Manage cases, coordinate investigators and maintain evidence records in one workspace.</p>
+                </div>
+                <div class="welcome-mark">CV</div>
+            </section>
+
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-top"><span>Total Cases</span><span class="stat-icon">▣</span></div>
+                    <h2 id="total-cases">24</h2>
+                    <p>Demo records</p>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-top"><span>Investigators</span><span class="stat-icon">♙</span></div>
+                    <h2 id="total-investigators">12</h2>
+                    <p>Demo records</p>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-top"><span>Evidence Items</span><span class="stat-icon">◈</span></div>
+                    <h2 id="total-evidence">38</h2>
+                    <p>Demo records</p>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-top"><span>Interviews</span><span class="stat-icon">☷</span></div>
+                    <h2 id="total-interviews">16</h2>
+                    <p>Demo records</p>
+                </article>
+            </section>
+
+            <section class="content-grid">
+                <article class="panel cases-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">CASE MANAGEMENT</p>
+                            <h2>Recent Cases</h2>
+                        </div>
+                        <button id="view-cases-btn" class="secondary-button">View all →</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Case ID</th>
+                                    <th>Case Title</th>
+                                    <th>Type</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-cases">
+                                <tr>
+                                    <td>CV-1001</td>
+                                    <td>Demo investigation Alpha</td>
+                                    <td>Theft</td>
+                                    <td><span class="priority high">High</span></td>
+                                    <td><span class="status open">Open</span></td>
+                                </tr>
+                                <tr>
+                                    <td>CV-1002</td>
+                                    <td>Demo investigation Bravo</td>
+                                    <td>Fraud</td>
+                                    <td><span class="priority medium">Medium</span></td>
+                                    <td><span class="status progress">In Progress</span></td>
+                                </tr>
+                                <tr>
+                                    <td>CV-1003</td>
+                                    <td>Demo investigation Charlie</td>
+                                    <td>Burglary</td>
+                                    <td><span class="priority low">Low</span></td>
+                                    <td><span class="status closed">Closed</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel activity-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">LATEST UPDATES</p>
+                            <h2>Recent Activity</h2>
+                        </div>
+                    </div>
+                    <div class="activity-list" id="recent-activity">
+                        <div class="activity-item">
+                            <span class="activity-marker"></span>
+                            <div><strong>Evidence registered</strong><p>Demo event · CV-1001</p><small>Today · Demo</small></div>
+                        </div>
+                        <div class="activity-item">
+                            <span class="activity-marker"></span>
+                            <div><strong>Investigator assigned</strong><p>Demo event · CV-1002</p><small>Yesterday · Demo</small></div>
+                        </div>
+                        <div class="activity-item">
+                            <span class="activity-marker"></span>
+                            <div><strong>Interview recorded</strong><p>Demo event · CV-1001</p><small>Earlier · Demo</small></div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <footer class="page-footer">
+                <span>CrimeVault · Crime Investigation, Evidence & Case Management</span>
+                <span>Prototype · Sample records only</span>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
