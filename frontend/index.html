@@ -25,6 +25,10 @@
                 <a href="#cases" class="nav-link" data-view="cases">▣ Cases</a>
                 <a href="#investigators" class="nav-link" data-view="investigators">♙ Investigators</a>
                 <a href="#people" class="nav-link" data-view="people">♧ People</a>
+                <a href="#case-people" class="nav-link" data-view="case-people">
+                <span aria-hidden="true">↔</span>
+                <span>Case–Person Links</span>
+                </a>
                 <a href="#evidence" class="nav-link" data-view="evidence">◈ Evidence & Custody</a>
                 <a href="#forensics" class="nav-link" data-view="forensics">⌕ Interviews & Forensics</a>
                 <a href="#timeline" class="nav-link" data-view="timeline">◷ Investigation Timeline</a>
@@ -362,7 +366,348 @@
 </section>
 
 <!-- ================= END CASE ASSIGNMENTS MODULE ================= -->
-                
+
+
+<!-- ============ CASE-PERSON ASSOCIATIONS MODULE ============ -->
+<section id="case-people-view" class="cases-view" hidden>
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">INVESTIGATION RELATIONSHIPS</p>
+            <h2>Case–Person Associations</h2>
+            <p class="muted-text">Manage the relationship between people and investigation cases.</p>
+        </div>
+        <button type="button" id="open-case-person-form" class="primary-button">
+            + Link Person to Case
+        </button>
+    </div>
+
+    <div class="case-filters case-person-filters">
+        <input type="search" id="case-person-search"
+               placeholder="Search case, person or relationship..."
+               aria-label="Search case-person associations">
+
+        <select id="case-person-role-filter" aria-label="Filter by relationship">
+            <option value="">All Relationships</option>
+            <option value="Witness">Witness</option>
+            <option value="Victim">Victim</option>
+            <option value="Suspect">Suspect</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Association Register</h2>
+                <p id="case-person-count" class="muted-text">0 associations</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Case Number</th>
+                        <th>Case Title</th>
+                        <th>Person ID</th>
+                        <th>Person Name</th>
+                        <th>Relationship</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="case-person-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-case-people" class="empty-state" hidden>
+            No associations match your search.
+        </p>
+    </div>
+
+    <section id="case-person-form-panel" class="panel case-form-panel"
+             hidden aria-labelledby="case-person-form-heading">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">LINK RECORDS</p>
+                <h2 id="case-person-form-heading">Link Person to Case</h2>
+            </div>
+            <button type="button" id="close-case-person-form" class="secondary-button">
+                Close
+            </button>
+        </div>
+
+        <form id="case-person-form">
+            <div class="form-grid">
+                <label>Case *
+                    <select name="caseNumber" required>
+                        <option value="">Select a case</option>
+                    </select>
+                </label>
+
+                <label>Person *
+                    <select name="personId" required>
+                        <option value="">Select a person</option>
+                    </select>
+                </label>
+
+                <label>Relationship to Case *
+                    <select name="relationship" required>
+                        <option value="">Select relationship</option>
+                        <option value="Witness">Witness</option>
+                        <option value="Victim">Victim</option>
+                        <option value="Suspect">Suspect</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </label>
+            </div>
+
+            <p class="form-note">
+                Demo mode: this links existing records in browser memory.
+                It does not create or delete database records.
+            </p>
+
+            <div class="form-actions">
+                <button type="button" id="cancel-case-person-form" class="secondary-button">
+                    Cancel
+                </button>
+                <button type="submit" class="primary-button">Save Association</button>
+            </div>
+        </form>
+    </section>
+</section>
+<!-- ============ END CASE-PERSON ASSOCIATIONS MODULE ============ -->
+
+
+<!-- ================= PEOPLE MODULE ================= -->
+
+<section id="people-view" class="cases-view" hidden>
+
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">PERSONNEL & CASE RECORDS</p>
+            <h2>People Register</h2>
+            <p class="muted-text">
+                Register, search and review people associated with investigations.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            id="open-person-form"
+            class="primary-button"
+        >
+            + Register Person
+        </button>
+    </div>
+
+    <!-- Search and filters -->
+    <div class="case-filters people-filters">
+        <input
+            type="search"
+            id="person-search"
+            placeholder="Search name, person ID or contact..."
+            aria-label="Search people"
+        >
+
+        <select id="person-role-filter" aria-label="Filter by role">
+            <option value="">All Roles</option>
+            <option value="Witness">Witness</option>
+            <option value="Suspect">Suspect</option>
+            <option value="Victim">Victim</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+    <!-- People table -->
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>People Register</h2>
+                <p id="person-count" class="muted-text">0 people</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Person ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Associated Case(s)</th>
+                    </tr>
+                </thead>
+                <tbody id="people-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-people" class="empty-state" hidden>
+            No people match your search.
+        </p>
+    </div>
+
+    <!-- Person registration/edit popup -->
+    <section
+        id="person-form-panel"
+        class="panel case-form-panel"
+        hidden
+        aria-labelledby="person-form-heading"
+    >
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">PERSON RECORD</p>
+                <h2 id="person-form-heading">Register Person</h2>
+            </div>
+
+            <button
+                type="button"
+                id="close-person-form"
+                class="secondary-button"
+            >
+                Close
+            </button>
+        </div>
+
+        <form id="person-form">
+            <div class="form-grid">
+
+                <label>
+                    Person ID *
+                    <input
+                        type="text"
+                        name="personId"
+                        placeholder="e.g. PER-1001"
+                        required
+                    >
+                </label>
+
+                <label>
+                    Full Name *
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Enter full name"
+                        required
+                    >
+                </label>
+
+                <label>
+                    Role *
+                    <select name="role" required>
+                        <option value="">Select role</option>
+                        <option value="Witness">Witness</option>
+                        <option value="Suspect">Suspect</option>
+                        <option value="Victim">Victim</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </label>
+
+                <label>
+                    Contact Number
+                    <input
+                        type="tel"
+                        name="contact"
+                        placeholder="Enter contact number"
+                    >
+                </label>
+
+                <label>
+                    Email
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Enter email address"
+                    >
+                </label>
+
+            </div>
+
+            <p class="form-note">
+                Demo mode: person records are held in browser memory only.
+            </p>
+
+            <div class="form-actions">
+                <button
+                    type="button"
+                    id="cancel-person-form"
+                    class="secondary-button"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    id="save-person-button"
+                    class="primary-button"
+                >
+                    Register Person
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Person details popup -->
+    <section
+        id="person-details-panel"
+        class="panel case-details-panel"
+        hidden
+        aria-labelledby="person-details-heading"
+    >
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">PERSON PROFILE</p>
+                <h2 id="person-details-heading">Person Details</h2>
+            </div>
+
+            <button
+                type="button"
+                id="close-person-details"
+                class="secondary-button"
+            >
+                Close
+            </button>
+        </div>
+
+        <div class="case-details-grid">
+            <div>
+                <span class="detail-label">Person ID</span>
+                <p id="detail-person-id">—</p>
+            </div>
+
+            <div>
+                <span class="detail-label">Full Name</span>
+                <p id="detail-person-name">—</p>
+            </div>
+
+            <div>
+                <span class="detail-label">Role</span>
+                <p id="detail-person-role">—</p>
+            </div>
+
+            <div>
+                <span class="detail-label">Contact</span>
+                <p id="detail-person-contact">—</p>
+            </div>
+
+            <div>
+                <span class="detail-label">Email</span>
+                <p id="detail-person-email">—</p>
+            </div>
+
+            <div>
+                <span class="detail-label">Associated Case(s)</span>
+                <p id="detail-person-cases">—</p>
+            </div>
+        </div>
+    </section>
+
+</section>
+
+<!-- ================= END PEOPLE MODULE ================= -->
+
+
 <!-- ================= INVESTIGATORS MODULE ================= -->
 <section id="investigators-view" class="cases-view" hidden>
 

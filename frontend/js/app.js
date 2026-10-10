@@ -1,11 +1,12 @@
 
 "use strict";
 
+
 // ============================================================
-// CRIMEVAULT — FRONTEND DEMO APPLICATION
-// All records are stored in browser memory.
-// No database/API connection is implemented yet.
+// CRIMEVAULT FRONTEND
+// Demo-only data. No Java API or Oracle connection yet.
 // ============================================================
+
 
 // -------------------- NAVIGATION --------------------
 
@@ -21,6 +22,8 @@ const dashboardSections = [
 const casesView = document.getElementById("cases-view");
 const investigatorsView = document.getElementById("investigators-view");
 const assignmentsView = document.getElementById("assignments-view");
+const peopleView = document.getElementById("people-view");
+const casePeopleView = document.getElementById("case-people-view");
 
 const viewTitles = {
     dashboard: "Dashboard",
@@ -28,10 +31,12 @@ const viewTitles = {
     investigators: "Investigators",
     assignments: "Case Assignments",
     people: "People",
+    "case-people": "Case–Person Links",
     evidence: "Evidence & Custody",
     forensics: "Interviews & Forensics",
     timeline: "Investigation Timeline"
 };
+
 
 // -------------------- CASES ELEMENTS --------------------
 
@@ -45,66 +50,65 @@ const caseForm = document.getElementById("case-form");
 const caseFormPanel = document.getElementById("case-form-panel");
 const caseDetailsPanel = document.getElementById("case-details-panel");
 
+
 // -------------------- INVESTIGATOR ELEMENTS --------------------
 
 const investigatorTableBody =
     document.getElementById("investigators-table-body");
-
 const investigatorCount =
     document.getElementById("investigator-count");
-
 const emptyInvestigators =
     document.getElementById("empty-investigators");
-
 const investigatorSearch =
     document.getElementById("investigator-search");
-
 const investigatorDepartmentFilter =
     document.getElementById("investigator-department-filter");
-
 const investigatorRankFilter =
     document.getElementById("investigator-rank-filter");
-
 const investigatorForm =
     document.getElementById("investigator-form");
-
 const investigatorFormPanel =
     document.getElementById("investigator-form-panel");
-
 const investigatorDetailsPanel =
     document.getElementById("investigator-details-panel");
+
 
 // -------------------- ASSIGNMENT ELEMENTS --------------------
 
 const assignmentTableBody =
     document.getElementById("assignments-table-body");
-
 const assignmentCount =
     document.getElementById("assignment-count");
-
 const emptyAssignments =
     document.getElementById("empty-assignments");
-
 const assignmentSearch =
     document.getElementById("assignment-search");
-
 const assignmentStatusFilter =
     document.getElementById("assignment-status-filter");
-
 const assignmentHistoryBody =
     document.getElementById("assignment-history-body");
-
 const emptyAssignmentHistory =
     document.getElementById("empty-assignment-history");
-
 const assignmentForm =
     document.getElementById("assignment-form");
-
 const assignmentFormPanel =
     document.getElementById("assignment-form-panel");
 
+
+// -------------------- PEOPLE ELEMENTS --------------------
+
+const peopleTableBody = document.getElementById("people-table-body");
+const personCount = document.getElementById("person-count");
+const emptyPeople = document.getElementById("empty-people");
+const personSearch = document.getElementById("person-search");
+const personRoleFilter = document.getElementById("person-role-filter");
+const personForm = document.getElementById("person-form");
+const personFormPanel = document.getElementById("person-form-panel");
+const personDetailsPanel = document.getElementById("person-details-panel");
+
+
 // ============================================================
-// DEMO DATA — CASES
+// DEMO CASE DATA
 // ============================================================
 
 const demoCases = [
@@ -143,8 +147,9 @@ const demoCases = [
     }
 ];
 
+
 // ============================================================
-// DEMO DATA — INVESTIGATORS
+// DEMO INVESTIGATOR DATA
 // ============================================================
 
 const demoInvestigators = [
@@ -186,11 +191,9 @@ const demoInvestigators = [
     }
 ];
 
+
 // ============================================================
-// DEMO DATA — CASE ASSIGNMENTS
-//
-// Each assignment is a separate relationship between a case
-// and an investigator. Inactive records are retained.
+// DEMO ASSIGNMENTS
 // ============================================================
 
 const demoCaseAssignments = [
@@ -214,6 +217,60 @@ const demoCaseAssignments = [
     }
 ];
 
+
+// ============================================================
+// DEMO PEOPLE DATA
+// ============================================================
+
+const demoPeople = [
+    {
+        personId: "PER-1001",
+        name: "Demo Witness Alpha",
+        role: "Witness",
+        contact: "9000000001",
+        email: "witness.demo@example.com"
+    },
+    {
+        personId: "PER-1002",
+        name: "Demo Person Bravo",
+        role: "Victim",
+        contact: "9000000002",
+        email: "victim.demo@example.com"
+    },
+    {
+        personId: "PER-1003",
+        name: "Demo Person Charlie",
+        role: "Suspect",
+        contact: "9000000003",
+        email: "suspect.demo@example.com"
+    }
+];
+
+
+// ============================================================
+// DEMO CASE-PERSON RELATIONSHIPS
+// Kept separate from person records, like a relationship table.
+// ============================================================
+
+const demoCasePeople = [
+    {
+        caseNumber: "CV-1001",
+        personId: "PER-1001",
+        relationship: "Witness"
+    },
+    {
+        caseNumber: "CV-1001",
+        personId: "PER-1002",
+        relationship: "Victim"
+    },
+    {
+        caseNumber: "CV-1002",
+        personId: "PER-1003",
+        relationship: "Suspect"
+    }
+];
+
+
 // ============================================================
 // SHARED HELPERS
 // ============================================================
@@ -222,6 +279,8 @@ let editingCaseNumber = null;
 let selectedCaseNumber = null;
 let editingInvestigatorId = null;
 let selectedInvestigatorId = null;
+let editingPersonId = null;
+let selectedPersonId = null;
 
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -235,10 +294,7 @@ function escapeHTML(value) {
 
 function setFieldValue(form, fieldName, value) {
     const field = form?.elements.namedItem(fieldName);
-
-    if (field) {
-        field.value = value ?? "";
-    }
+    if (field) field.value = value ?? "";
 }
 
 function getCaseByNumber(caseNumber) {
@@ -251,6 +307,10 @@ function getInvestigatorById(investigatorId) {
     );
 }
 
+function getPersonById(personId) {
+    return demoPeople.find(item => item.personId === personId);
+}
+
 function getActiveAssignments(investigatorId) {
     return demoCaseAssignments.filter(assignment =>
         assignment.investigatorId === investigatorId
@@ -261,34 +321,35 @@ function getActiveAssignments(investigatorId) {
 function getAssignedCaseText(investigatorId) {
     const assignments = getActiveAssignments(investigatorId);
 
-    if (assignments.length === 0) {
-        return "Unassigned";
-    }
+    if (assignments.length === 0) return "Unassigned";
 
-    return assignments.map(assignment => {
-        const caseRecord = getCaseByNumber(assignment.caseNumber);
+    return assignments.map(item => item.caseNumber).join(", ");
+}
 
-        return caseRecord
-            ? `${assignment.caseNumber}`
-            : assignment.caseNumber;
-    }).join(", ");
+function getPersonCaseNumbers(personId) {
+    return demoCasePeople
+        .filter(item => item.personId === personId)
+        .map(item => item.caseNumber);
+}
+
+function getPersonCaseText(personId) {
+    const cases = getPersonCaseNumbers(personId);
+    return cases.length ? cases.join(", ") : "No cases linked";
 }
 
 function getInvestigatorDisplayName(investigatorId) {
-    const investigator = getInvestigatorById(investigatorId);
-
-    return investigator
-        ? investigator.name
-        : "Unknown investigator";
+    return getInvestigatorById(investigatorId)?.name
+        || "Investigator unavailable";
 }
 
 function getAssignmentStatusClass(status) {
     return status === "Active" ? "open" : "closed";
 }
 
-// ============================================================
-// NAVIGATION
-// ============================================================
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
 
 function activateView(viewName) {
     navigationLinks.forEach(link => {
@@ -310,35 +371,35 @@ function activateView(viewName) {
     const showCases = viewName === "cases";
     const showInvestigators = viewName === "investigators";
     const showAssignments = viewName === "assignments";
+    const showPeople = viewName === "people";
+    const showCasePeople = viewName === "case-people";
 
     dashboardSections.forEach(section => {
         if (section) {
             section.hidden =
-                showCases || showInvestigators || showAssignments;
+                showCases ||
+                showInvestigators ||
+                showAssignments ||
+                showPeople ||
+                showCasePeople;
         }
     });
 
-    if (casesView) {
-        casesView.hidden = !showCases;
-    }
-
-    if (investigatorsView) {
-        investigatorsView.hidden = !showInvestigators;
-    }
-
-    if (assignmentsView) {
-        assignmentsView.hidden = !showAssignments;
-    }
+    if (casesView) casesView.hidden = !showCases;
+    if (investigatorsView) investigatorsView.hidden = !showInvestigators;
+    if (assignmentsView) assignmentsView.hidden = !showAssignments;
+    if (peopleView) peopleView.hidden = !showPeople;
+    if (casePeopleView) casePeopleView.hidden = !showCasePeople;
 
     if (
-        viewName !== "dashboard"
-        && !showCases
-        && !showInvestigators
-        && !showAssignments
+        viewName !== "dashboard" &&
+        !showCases &&
+        !showInvestigators &&
+        !showAssignments &&
+        !showPeople &&
+        !showCasePeople
     ) {
-        console.log(
-            `${viewName} module is planned but not implemented yet.`
-        );
+        console.log(`${viewName} module is planned but not implemented yet.`);
     }
 
     if (showCases) renderCases();
@@ -348,6 +409,13 @@ function activateView(viewName) {
         populateAssignmentOptions();
         renderAssignments();
     }
+
+    if (showPeople) renderPeople();
+
+    if (showCasePeople) {
+        populateCasePersonOptions();
+        renderCasePeople();
+    }
 }
 
 navigationLinks.forEach(link => {
@@ -355,7 +423,6 @@ navigationLinks.forEach(link => {
         event.preventDefault();
 
         const viewName = link.dataset.view;
-
         activateView(viewName);
         history.replaceState(null, "", `#${viewName}`);
     });
@@ -370,8 +437,9 @@ if (viewCasesButton) {
     });
 }
 
+
 // ============================================================
-// CASES — TABLE, SEARCH AND FILTERS
+// CASES — TABLE AND FILTERS
 // ============================================================
 
 function renderCases() {
@@ -398,13 +466,10 @@ function renderCases() {
     });
 
     caseTableBody.innerHTML = filteredCases.map(item => `
-        <tr
-            class="clickable-case-row"
+        <tr class="clickable-case-row"
             data-case-number="${escapeHTML(item.caseNumber)}"
-            tabindex="0"
-            role="button"
-            aria-label="View case ${escapeHTML(item.caseNumber)}"
-        >
+            tabindex="0" role="button"
+            aria-label="View case ${escapeHTML(item.caseNumber)}">
             <td>${escapeHTML(item.caseNumber)}</td>
             <td>${escapeHTML(item.title)}</td>
             <td>${escapeHTML(item.caseType)}</td>
@@ -431,9 +496,7 @@ function renderCases() {
             `${filteredCases.length} of ${demoCases.length} cases`;
     }
 
-    if (emptyCases) {
-        emptyCases.hidden = filteredCases.length !== 0;
-    }
+    if (emptyCases) emptyCases.hidden = filteredCases.length !== 0;
 }
 
 if (caseTableBody) {
@@ -442,7 +505,6 @@ if (caseTableBody) {
         if (!row) return;
 
         const record = getCaseByNumber(row.dataset.caseNumber);
-
         if (record) openCaseDetails(record);
     });
 
@@ -461,9 +523,8 @@ if (searchInput) searchInput.addEventListener("input", renderCases);
 if (statusFilter) statusFilter.addEventListener("change", renderCases);
 if (priorityFilter) priorityFilter.addEventListener("change", renderCases);
 
-// ============================================================
-// CASES — DETAILS POPUP
-// ============================================================
+
+// -------------------- CASE DETAILS --------------------
 
 function openCaseDetails(record) {
     if (!caseDetailsPanel || !record) return;
@@ -479,21 +540,18 @@ function openCaseDetails(record) {
         "detail-case-location": record.location,
         "detail-case-date-reported": record.dateReported,
         "detail-case-date-opened": record.dateOpened || "Not specified",
-        "detail-case-description":
-            record.description || "No description provided."
+        "detail-case-description": record.description || "No description provided."
     };
 
     Object.entries(details).forEach(([id, value]) => {
         const element = document.getElementById(id);
-
         if (element) element.textContent = value;
     });
 
     caseDetailsPanel.hidden = false;
 }
 
-const closeDetailsButton =
-    document.getElementById("close-case-details");
+const closeDetailsButton = document.getElementById("close-case-details");
 
 if (closeDetailsButton) {
     closeDetailsButton.addEventListener("click", () => {
@@ -505,11 +563,9 @@ function setupCaseEditButton() {
     if (!caseDetailsPanel) return;
 
     const heading = caseDetailsPanel.querySelector(".panel-heading");
-
     if (!heading || document.getElementById("edit-case-button")) return;
 
     const button = document.createElement("button");
-
     button.id = "edit-case-button";
     button.type = "button";
     button.className = "primary-button";
@@ -523,16 +579,14 @@ function setupCaseEditButton() {
 
     button.addEventListener("click", () => {
         const record = getCaseByNumber(selectedCaseNumber);
-
         if (record) openCaseForm(record);
     });
 }
 
 setupCaseEditButton();
 
-// ============================================================
-// CASES — CREATE AND EDIT FORM
-// ============================================================
+
+// -------------------- CASE CREATE / EDIT --------------------
 
 function openCaseForm(record = null) {
     if (!caseForm || !caseFormPanel) return;
@@ -550,7 +604,6 @@ function openCaseForm(record = null) {
 
         if (heading) heading.textContent = "Edit Case";
         if (submitButton) submitButton.textContent = "Save Changes";
-
         if (caseDetailsPanel) caseDetailsPanel.hidden = true;
     } else {
         if (heading) heading.textContent = "Register a Case";
@@ -558,10 +611,7 @@ function openCaseForm(record = null) {
     }
 
     caseFormPanel.hidden = false;
-    caseFormPanel.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+    caseFormPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function closeCaseForm() {
@@ -570,12 +620,6 @@ function closeCaseForm() {
     caseFormPanel.hidden = true;
     caseForm.reset();
     editingCaseNumber = null;
-
-    const heading = caseFormPanel.querySelector("h2");
-    const submitButton = caseForm.querySelector('[type="submit"]');
-
-    if (heading) heading.textContent = "Register a Case";
-    if (submitButton) submitButton.textContent = "Register Case";
 }
 
 const openCaseFormButton = document.getElementById("open-case-form");
@@ -585,11 +629,9 @@ const cancelCaseFormButton = document.getElementById("cancel-case-form");
 if (openCaseFormButton) {
     openCaseFormButton.addEventListener("click", () => openCaseForm());
 }
-
 if (closeCaseFormButton) {
     closeCaseFormButton.addEventListener("click", closeCaseForm);
 }
-
 if (cancelCaseFormButton) {
     cancelCaseFormButton.addEventListener("click", closeCaseForm);
 }
@@ -597,7 +639,6 @@ if (cancelCaseFormButton) {
 if (caseForm) {
     caseForm.addEventListener("submit", event => {
         event.preventDefault();
-
         if (!caseForm.reportValidity()) return;
 
         const data = new FormData(caseForm);
@@ -641,7 +682,6 @@ if (caseForm) {
 
             demoCases[index] = record;
             selectedCaseNumber = record.caseNumber;
-
             closeCaseForm();
 
             if (searchInput) searchInput.value = "";
@@ -650,12 +690,13 @@ if (caseForm) {
 
             renderCases();
             renderAssignments();
+            renderPeople();
+            renderCasePeople();
             openCaseDetails(record);
 
             alert("Demo case updated. Not saved to the database.");
         } else {
             demoCases.unshift(record);
-
             closeCaseForm();
 
             if (searchInput) searchInput.value = "";
@@ -664,62 +705,53 @@ if (caseForm) {
 
             renderCases();
             populateAssignmentOptions();
+            populateCasePersonOptions();
             renderAssignments();
+            renderPeople();
+            renderCasePeople();
 
             alert("Demo case added. Not saved to the database.");
         }
     });
 }
 
-// ============================================================
-// INVESTIGATORS — FILTER OPTIONS
-// ============================================================
+/* ============================================================
+   INVESTIGATORS — FILTERS AND TABLE
+   ============================================================ */
 
 function populateInvestigatorFilters() {
     if (investigatorDepartmentFilter) {
-        const currentDepartment = investigatorDepartmentFilter.value;
-
+        const current = investigatorDepartmentFilter.value;
         const departments = [
             ...new Set(demoInvestigators.map(item => item.department))
         ].sort();
 
         investigatorDepartmentFilter.innerHTML =
             '<option value="">All Departments</option>'
-            + departments.map(department => `
-                <option value="${escapeHTML(department)}">
-                    ${escapeHTML(department)}
-                </option>
-            `).join("");
+            + departments.map(value =>
+                `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
+            ).join("");
 
-        if (departments.includes(currentDepartment)) {
-            investigatorDepartmentFilter.value = currentDepartment;
+        if (departments.includes(current)) {
+            investigatorDepartmentFilter.value = current;
         }
     }
 
     if (investigatorRankFilter) {
-        const currentRank = investigatorRankFilter.value;
-
+        const current = investigatorRankFilter.value;
         const ranks = [
             ...new Set(demoInvestigators.map(item => item.rank))
         ].sort();
 
         investigatorRankFilter.innerHTML =
             '<option value="">All Ranks</option>'
-            + ranks.map(rank => `
-                <option value="${escapeHTML(rank)}">
-                    ${escapeHTML(rank)}
-                </option>
-            `).join("");
+            + ranks.map(value =>
+                `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
+            ).join("");
 
-        if (ranks.includes(currentRank)) {
-            investigatorRankFilter.value = currentRank;
-        }
+        if (ranks.includes(current)) investigatorRankFilter.value = current;
     }
 }
-
-// ============================================================
-// INVESTIGATORS — TABLE, SEARCH AND FILTERS
-// ============================================================
 
 function renderInvestigators() {
     if (!investigatorTableBody) return;
@@ -730,16 +762,16 @@ function renderInvestigators() {
         ? investigatorSearch.value.trim().toLowerCase()
         : "";
 
-    const selectedDepartment = investigatorDepartmentFilter
+    const department = investigatorDepartmentFilter
         ? investigatorDepartmentFilter.value
         : "";
 
-    const selectedRank = investigatorRankFilter
+    const rank = investigatorRankFilter
         ? investigatorRankFilter.value
         : "";
 
     const filtered = demoInvestigators.filter(item => {
-        const searchableText = [
+        const searchable = [
             item.investigatorId,
             item.name,
             item.badgeNumber,
@@ -750,19 +782,16 @@ function renderInvestigators() {
             getAssignedCaseText(item.investigatorId)
         ].join(" ").toLowerCase();
 
-        return searchableText.includes(query)
-            && (!selectedDepartment || item.department === selectedDepartment)
-            && (!selectedRank || item.rank === selectedRank);
+        return searchable.includes(query)
+            && (!department || item.department === department)
+            && (!rank || item.rank === rank);
     });
 
     investigatorTableBody.innerHTML = filtered.map(item => `
-        <tr
-            class="clickable-case-row"
+        <tr class="clickable-case-row"
             data-investigator-id="${escapeHTML(item.investigatorId)}"
-            tabindex="0"
-            role="button"
-            aria-label="View investigator ${escapeHTML(item.name)}"
-        >
+            tabindex="0" role="button"
+            aria-label="View investigator ${escapeHTML(item.name)}">
             <td>${escapeHTML(item.investigatorId)}</td>
             <td>${escapeHTML(item.name)}</td>
             <td>${escapeHTML(item.badgeNumber)}</td>
@@ -779,22 +808,15 @@ function renderInvestigators() {
             `${filtered.length} of ${demoInvestigators.length} investigators`;
     }
 
-    if (emptyInvestigators) {
-        emptyInvestigators.hidden = filtered.length !== 0;
-    }
+    if (emptyInvestigators) emptyInvestigators.hidden = filtered.length !== 0;
 }
 
 if (investigatorSearch) {
     investigatorSearch.addEventListener("input", renderInvestigators);
 }
-
 if (investigatorDepartmentFilter) {
-    investigatorDepartmentFilter.addEventListener(
-        "change",
-        renderInvestigators
-    );
+    investigatorDepartmentFilter.addEventListener("change", renderInvestigators);
 }
-
 if (investigatorRankFilter) {
     investigatorRankFilter.addEventListener("change", renderInvestigators);
 }
@@ -805,7 +827,6 @@ if (investigatorTableBody) {
         if (!row) return;
 
         const record = getInvestigatorById(row.dataset.investigatorId);
-
         if (record) openInvestigatorDetails(record);
     });
 
@@ -820,9 +841,8 @@ if (investigatorTableBody) {
     });
 }
 
-// ============================================================
-// INVESTIGATORS — DETAILS POPUP
-// ============================================================
+
+// -------------------- INVESTIGATOR DETAILS --------------------
 
 function openInvestigatorDetails(record) {
     if (!investigatorDetailsPanel || !record) return;
@@ -841,7 +861,6 @@ function openInvestigatorDetails(record) {
 
     Object.entries(details).forEach(([id, value]) => {
         const element = document.getElementById(id);
-
         if (element) element.textContent = value;
     });
 
@@ -868,8 +887,7 @@ function openInvestigatorDetails(record) {
     }
 
     if (assignmentElement) {
-        assignmentElement.textContent =
-            getAssignedCaseText(record.investigatorId);
+        assignmentElement.textContent = getAssignedCaseText(record.investigatorId);
     }
 
     investigatorDetailsPanel.hidden = false;
@@ -880,35 +898,26 @@ const closeInvestigatorDetailsButton =
 
 if (closeInvestigatorDetailsButton) {
     closeInvestigatorDetailsButton.addEventListener("click", () => {
-        if (investigatorDetailsPanel) {
-            investigatorDetailsPanel.hidden = true;
-        }
+        if (investigatorDetailsPanel) investigatorDetailsPanel.hidden = true;
     });
 }
 
 function setupInvestigatorEditButton() {
     if (!investigatorDetailsPanel) return;
 
-    const heading =
-        investigatorDetailsPanel.querySelector(".panel-heading");
+    const heading = investigatorDetailsPanel.querySelector(".panel-heading");
 
-    if (
-        !heading
-        || document.getElementById("edit-investigator-button")
-    ) {
-        return;
-    }
+    if (!heading || document.getElementById("edit-investigator-button")) return;
 
     const button = document.createElement("button");
-
     button.id = "edit-investigator-button";
     button.type = "button";
     button.className = "primary-button";
     button.textContent = "Edit Investigator";
 
     if (
-        closeInvestigatorDetailsButton
-        && heading.contains(closeInvestigatorDetailsButton)
+        closeInvestigatorDetailsButton &&
+        heading.contains(closeInvestigatorDetailsButton)
     ) {
         heading.insertBefore(button, closeInvestigatorDetailsButton);
     } else {
@@ -917,16 +926,14 @@ function setupInvestigatorEditButton() {
 
     button.addEventListener("click", () => {
         const record = getInvestigatorById(selectedInvestigatorId);
-
         if (record) openInvestigatorForm(record);
     });
 }
 
 setupInvestigatorEditButton();
 
-// ============================================================
-// INVESTIGATORS — CREATE AND EDIT
-// ============================================================
+
+// -------------------- INVESTIGATOR CREATE / EDIT --------------------
 
 function openInvestigatorForm(record = null) {
     if (!investigatorForm || !investigatorFormPanel) return;
@@ -934,11 +941,8 @@ function openInvestigatorForm(record = null) {
     investigatorForm.reset();
     editingInvestigatorId = record ? record.investigatorId : null;
 
-    const heading =
-        document.getElementById("investigator-form-heading");
-
-    const submitButton =
-        document.getElementById("save-investigator-button");
+    const heading = document.getElementById("investigator-form-heading");
+    const submitButton = document.getElementById("save-investigator-button");
 
     if (record) {
         Object.entries(record).forEach(([name, value]) => {
@@ -947,16 +951,10 @@ function openInvestigatorForm(record = null) {
 
         if (heading) heading.textContent = "Edit Investigator";
         if (submitButton) submitButton.textContent = "Save Changes";
-
-        if (investigatorDetailsPanel) {
-            investigatorDetailsPanel.hidden = true;
-        }
+        if (investigatorDetailsPanel) investigatorDetailsPanel.hidden = true;
     } else {
         if (heading) heading.textContent = "Register Investigator";
-
-        if (submitButton) {
-            submitButton.textContent = "Register Investigator";
-        }
+        if (submitButton) submitButton.textContent = "Register Investigator";
     }
 
     investigatorFormPanel.hidden = false;
@@ -968,95 +966,59 @@ function closeInvestigatorForm() {
     investigatorFormPanel.hidden = true;
     investigatorForm.reset();
     editingInvestigatorId = null;
-
-    const heading =
-        document.getElementById("investigator-form-heading");
-
-    const submitButton =
-        document.getElementById("save-investigator-button");
-
-    if (heading) heading.textContent = "Register Investigator";
-
-    if (submitButton) {
-        submitButton.textContent = "Register Investigator";
-    }
 }
 
 const openInvestigatorFormButton =
     document.getElementById("open-investigator-form");
-
 const closeInvestigatorFormButton =
     document.getElementById("close-investigator-form");
-
 const cancelInvestigatorFormButton =
     document.getElementById("cancel-investigator-form");
 
 if (openInvestigatorFormButton) {
-    openInvestigatorFormButton.addEventListener("click", () => {
-        openInvestigatorForm();
-    });
+    openInvestigatorFormButton.addEventListener("click", () => openInvestigatorForm());
 }
-
 if (closeInvestigatorFormButton) {
-    closeInvestigatorFormButton.addEventListener(
-        "click",
-        closeInvestigatorForm
-    );
+    closeInvestigatorFormButton.addEventListener("click", closeInvestigatorForm);
 }
-
 if (cancelInvestigatorFormButton) {
-    cancelInvestigatorFormButton.addEventListener(
-        "click",
-        closeInvestigatorForm
-    );
+    cancelInvestigatorFormButton.addEventListener("click", closeInvestigatorForm);
 }
 
 if (investigatorForm) {
     investigatorForm.addEventListener("submit", event => {
         event.preventDefault();
-
         if (!investigatorForm.reportValidity()) return;
 
         const data = new FormData(investigatorForm);
 
         const record = {
-            investigatorId:
-                String(data.get("investigatorId") || "").trim(),
+            investigatorId: String(data.get("investigatorId") || "").trim(),
             name: String(data.get("name") || "").trim(),
-            badgeNumber:
-                String(data.get("badgeNumber") || "").trim(),
-            department:
-                String(data.get("department") || "").trim(),
+            badgeNumber: String(data.get("badgeNumber") || "").trim(),
+            department: String(data.get("department") || "").trim(),
             rank: String(data.get("rank") || "").trim(),
             contact: String(data.get("contact") || "").trim(),
             email: String(data.get("email") || "").trim()
         };
 
-        const duplicateId = demoInvestigators.some(item =>
-            item.investigatorId.toLowerCase()
-                === record.investigatorId.toLowerCase()
+        if (demoInvestigators.some(item =>
+            item.investigatorId.toLowerCase() === record.investigatorId.toLowerCase()
             && item.investigatorId !== editingInvestigatorId
-        );
-
-        if (duplicateId) {
+        )) {
             alert("That Investigator ID already exists.");
             return;
         }
 
-        const duplicateBadge = demoInvestigators.some(item =>
-            item.badgeNumber.toLowerCase()
-                === record.badgeNumber.toLowerCase()
+        if (demoInvestigators.some(item =>
+            item.badgeNumber.toLowerCase() === record.badgeNumber.toLowerCase()
             && item.investigatorId !== editingInvestigatorId
-        );
-
-        if (duplicateBadge) {
+        )) {
             alert("That Badge Number is already registered.");
             return;
         }
 
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailPattern.test(record.email)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
             alert("Please enter a valid email address.");
             return;
         }
@@ -1073,7 +1035,6 @@ if (investigatorForm) {
 
             demoInvestigators[index] = record;
             selectedInvestigatorId = record.investigatorId;
-
             closeInvestigatorForm();
 
             if (investigatorSearch) investigatorSearch.value = "";
@@ -1084,7 +1045,6 @@ if (investigatorForm) {
             alert("Demo investigator updated. Not saved to the database.");
         } else {
             demoInvestigators.unshift(record);
-
             closeInvestigatorForm();
 
             if (investigatorSearch) investigatorSearch.value = "";
@@ -1097,8 +1057,9 @@ if (investigatorForm) {
     });
 }
 
+
 // ============================================================
-// ASSIGNMENTS — POPULATE DROPDOWNS
+// ASSIGNMENTS — DROPDOWNS
 // ============================================================
 
 function populateAssignmentOptions() {
@@ -1135,18 +1096,17 @@ function populateAssignmentOptions() {
                 </option>
             `).join("");
 
-        if (
-            demoInvestigators.some(
-                item => item.investigatorId === previousValue
-            )
-        ) {
+        if (demoInvestigators.some(item =>
+            item.investigatorId === previousValue
+        )) {
             investigatorSelect.value = previousValue;
         }
     }
 }
 
+
 // ============================================================
-// ASSIGNMENTS — TABLE AND HISTORY
+// ASSIGNMENTS — REGISTER AND HISTORY
 // ============================================================
 
 function renderAssignments() {
@@ -1164,7 +1124,7 @@ function renderAssignments() {
         const caseRecord = getCaseByNumber(assignment.caseNumber);
         const investigator = getInvestigatorById(assignment.investigatorId);
 
-        const searchableText = [
+        const searchable = [
             assignment.assignmentId,
             assignment.caseNumber,
             caseRecord?.title || "",
@@ -1175,32 +1135,20 @@ function renderAssignments() {
             assignment.assignmentStatus
         ].join(" ").toLowerCase();
 
-        return searchableText.includes(query)
-            && (!selectedStatus
-                || assignment.assignmentStatus === selectedStatus);
+        return searchable.includes(query)
+            && (!selectedStatus || assignment.assignmentStatus === selectedStatus);
     });
 
     assignmentTableBody.innerHTML = filtered.map(assignment => {
         const caseRecord = getCaseByNumber(assignment.caseNumber);
-        const investigator =
-            getInvestigatorById(assignment.investigatorId);
+        const investigator = getInvestigatorById(assignment.investigatorId);
 
-        const statusClass =
-            getAssignmentStatusClass(assignment.assignmentStatus);
-
-        const actionButton = assignment.assignmentStatus === "Active"
-            ? `
-                <button
-                    type="button"
-                    class="secondary-button"
-                    data-deactivate-assignment="${escapeHTML(assignment.assignmentId)}"
-                >
-                    Deactivate
-                </button>
-            `
-            : `
-                <span class="muted-text">Inactive</span>
-            `;
+        const action = assignment.assignmentStatus === "Active"
+            ? `<button type="button" class="secondary-button"
+                 data-deactivate-assignment="${escapeHTML(assignment.assignmentId)}">
+                 Deactivate
+               </button>`
+            : `<span class="muted-text">Inactive</span>`;
 
         return `
             <tr>
@@ -1211,11 +1159,11 @@ function renderAssignments() {
                 <td>${escapeHTML(assignment.assignmentRole)}</td>
                 <td>${escapeHTML(assignment.assignmentDate)}</td>
                 <td>
-                    <span class="status ${statusClass}">
+                    <span class="status ${getAssignmentStatusClass(assignment.assignmentStatus)}">
                         ${escapeHTML(assignment.assignmentStatus)}
                     </span>
                 </td>
-                <td>${actionButton}</td>
+                <td>${action}</td>
             </tr>
         `;
     }).join("");
@@ -1225,43 +1173,31 @@ function renderAssignments() {
             `${filtered.length} of ${demoCaseAssignments.length} assignments`;
     }
 
-    if (emptyAssignments) {
-        emptyAssignments.hidden = filtered.length !== 0;
-    }
+    if (emptyAssignments) emptyAssignments.hidden = filtered.length !== 0;
 
-    // History always shows all records, including inactive assignments.
     if (assignmentHistoryBody) {
-        assignmentHistoryBody.innerHTML = demoCaseAssignments.map(assignment => {
-            const investigator =
-                getInvestigatorById(assignment.investigatorId);
-
-            return `
-                <tr>
-                    <td>${escapeHTML(assignment.caseNumber)}</td>
-                    <td>${escapeHTML(investigator?.name || "Investigator unavailable")}</td>
-                    <td>${escapeHTML(assignment.assignmentRole)}</td>
-                    <td>${escapeHTML(assignment.assignmentDate)}</td>
-                    <td>
-                        <span class="status ${
-                            getAssignmentStatusClass(assignment.assignmentStatus)
-                        }">
-                            ${escapeHTML(assignment.assignmentStatus)}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        }).join("");
+        assignmentHistoryBody.innerHTML = demoCaseAssignments.map(assignment => `
+            <tr>
+                <td>${escapeHTML(assignment.caseNumber)}</td>
+                <td>${escapeHTML(getInvestigatorDisplayName(assignment.investigatorId))}</td>
+                <td>${escapeHTML(assignment.assignmentRole)}</td>
+                <td>${escapeHTML(assignment.assignmentDate)}</td>
+                <td>
+                    <span class="status ${getAssignmentStatusClass(assignment.assignmentStatus)}">
+                        ${escapeHTML(assignment.assignmentStatus)}
+                    </span>
+                </td>
+            </tr>
+        `).join("");
     }
 
     if (emptyAssignmentHistory) {
-        emptyAssignmentHistory.hidden =
-            demoCaseAssignments.length !== 0;
+        emptyAssignmentHistory.hidden = demoCaseAssignments.length !== 0;
     }
 }
 
-// ============================================================
-// ASSIGNMENTS — CREATE FORM
-// ============================================================
+
+// -------------------- ASSIGNMENT FORM --------------------
 
 function openAssignmentForm() {
     if (!assignmentForm || !assignmentFormPanel) return;
@@ -1269,8 +1205,7 @@ function openAssignmentForm() {
     assignmentForm.reset();
     populateAssignmentOptions();
 
-    const dateField =
-        assignmentForm.elements.namedItem("assignmentDate");
+    const dateField = assignmentForm.elements.namedItem("assignmentDate");
 
     if (dateField) {
         dateField.value = new Date().toISOString().slice(0, 10);
@@ -1288,57 +1223,32 @@ function closeAssignmentForm() {
 
 const openAssignmentFormButton =
     document.getElementById("open-assignment-form");
-
 const closeAssignmentFormButton =
     document.getElementById("close-assignment-form");
-
 const cancelAssignmentFormButton =
     document.getElementById("cancel-assignment-form");
 
 if (openAssignmentFormButton) {
-    openAssignmentFormButton.addEventListener(
-        "click",
-        openAssignmentForm
-    );
+    openAssignmentFormButton.addEventListener("click", openAssignmentForm);
 }
-
 if (closeAssignmentFormButton) {
-    closeAssignmentFormButton.addEventListener(
-        "click",
-        closeAssignmentForm
-    );
+    closeAssignmentFormButton.addEventListener("click", closeAssignmentForm);
 }
-
 if (cancelAssignmentFormButton) {
-    cancelAssignmentFormButton.addEventListener(
-        "click",
-        closeAssignmentForm
-    );
+    cancelAssignmentFormButton.addEventListener("click", closeAssignmentForm);
 }
-
-// ============================================================
-// ASSIGNMENTS — VALIDATION AND SAVE
-// ============================================================
 
 if (assignmentForm) {
     assignmentForm.addEventListener("submit", event => {
         event.preventDefault();
-
         if (!assignmentForm.reportValidity()) return;
 
         const data = new FormData(assignmentForm);
 
-        const caseNumber =
-            String(data.get("caseNumber") || "").trim();
-
-        const investigatorId =
-            String(data.get("investigatorId") || "").trim();
-
-        const assignmentRole =
-            String(data.get("assignmentRole") || "").trim();
-
-        const assignmentDate =
-            String(data.get("assignmentDate") || "").trim();
+        const caseNumber = String(data.get("caseNumber") || "").trim();
+        const investigatorId = String(data.get("investigatorId") || "").trim();
+        const assignmentRole = String(data.get("assignmentRole") || "").trim();
+        const assignmentDate = String(data.get("assignmentDate") || "").trim();
 
         if (!getCaseByNumber(caseNumber)) {
             alert("Please select a valid case.");
@@ -1350,7 +1260,6 @@ if (assignmentForm) {
             return;
         }
 
-        // Prevent duplicate active case/investigator pairs.
         const duplicateActive = demoCaseAssignments.some(assignment =>
             assignment.caseNumber === caseNumber
             && assignment.investigatorId === investigatorId
@@ -1358,16 +1267,12 @@ if (assignmentForm) {
         );
 
         if (duplicateActive) {
-            alert(
-                "This investigator is already actively assigned to this case."
-            );
+            alert("This investigator is already actively assigned to this case.");
             return;
         }
 
-        const duplicateIdNumber = demoCaseAssignments.length + 1001;
-
         const newAssignment = {
-            assignmentId: `ASN-${duplicateIdNumber}`,
+            assignmentId: `ASN-${Date.now()}`,
             caseNumber,
             investigatorId,
             assignmentDate,
@@ -1377,7 +1282,6 @@ if (assignmentForm) {
         };
 
         demoCaseAssignments.push(newAssignment);
-
         closeAssignmentForm();
 
         if (assignmentSearch) assignmentSearch.value = "";
@@ -1386,15 +1290,9 @@ if (assignmentForm) {
         renderAssignments();
         renderInvestigators();
 
-        alert(
-            "Investigator assigned successfully in demo mode. This assignment has not been saved to the database."
-        );
+        alert("Assignment added in demo mode. Not saved to the database.");
     });
 }
-
-// ============================================================
-// ASSIGNMENTS — DEACTIVATE WITHOUT DELETING HISTORY
-// ============================================================
 
 if (assignmentTableBody) {
     assignmentTableBody.addEventListener("click", event => {
@@ -1404,21 +1302,17 @@ if (assignmentTableBody) {
 
         if (!button) return;
 
-        const assignmentId = button.dataset.deactivateAssignment;
-
         const assignment = demoCaseAssignments.find(
-            item => item.assignmentId === assignmentId
+            item => item.assignmentId === button.dataset.deactivateAssignment
         );
 
-        if (!assignment || assignment.assignmentStatus !== "Active") {
+        if (!assignment || assignment.assignmentStatus !== "Active") return;
+
+        if (!confirm(
+            `Deactivate assignment for ${assignment.caseNumber}? Its history will be retained.`
+        )) {
             return;
         }
-
-        const confirmed = confirm(
-            `Deactivate assignment ${assignment.assignmentId} for ${assignment.caseNumber}? The history record will be retained.`
-        );
-
-        if (!confirmed) return;
 
         assignment.assignmentStatus = "Inactive";
         assignment.inactiveDate = new Date().toISOString().slice(0, 10);
@@ -1426,24 +1320,565 @@ if (assignmentTableBody) {
         renderAssignments();
         renderInvestigators();
 
-        alert(
-            "Assignment deactivated. Its history has been retained in demo memory."
-        );
+        alert("Assignment deactivated. History retained in demo memory.");
     });
 }
 
 if (assignmentSearch) {
     assignmentSearch.addEventListener("input", renderAssignments);
 }
-
 if (assignmentStatusFilter) {
     assignmentStatusFilter.addEventListener("change", renderAssignments);
 }
 
+/* ============================================================
+   PEOPLE — TABLE AND FILTERS
+   ============================================================ */
+
+function renderPeople() {
+    if (!peopleTableBody) return;
+
+    const query = personSearch
+        ? personSearch.value.trim().toLowerCase()
+        : "";
+
+    const selectedRole = personRoleFilter
+        ? personRoleFilter.value
+        : "";
+
+    const filtered = demoPeople.filter(person => {
+        const searchable = [
+            person.personId,
+            person.name,
+            person.role,
+            person.contact,
+            person.email,
+            getPersonCaseText(person.personId)
+        ].join(" ").toLowerCase();
+
+        return searchable.includes(query)
+            && (!selectedRole || person.role === selectedRole);
+    });
+
+    peopleTableBody.innerHTML = filtered.map(person => `
+        <tr class="clickable-case-row"
+            data-person-id="${escapeHTML(person.personId)}"
+            tabindex="0" role="button"
+            aria-label="View person ${escapeHTML(person.name)}">
+            <td>${escapeHTML(person.personId)}</td>
+            <td>${escapeHTML(person.name)}</td>
+            <td>${escapeHTML(person.role)}</td>
+            <td>${escapeHTML(person.contact || "Not provided")}</td>
+            <td>${escapeHTML(person.email || "Not provided")}</td>
+            <td>${escapeHTML(getPersonCaseText(person.personId))}</td>
+        </tr>
+    `).join("");
+
+    if (personCount) {
+        personCount.textContent =
+            `${filtered.length} of ${demoPeople.length} people`;
+    }
+
+    if (emptyPeople) {
+        emptyPeople.hidden = filtered.length !== 0;
+    }
+}
+
+if (personSearch) {
+    personSearch.addEventListener("input", renderPeople);
+}
+if (personRoleFilter) {
+    personRoleFilter.addEventListener("change", renderPeople);
+}
+
+if (peopleTableBody) {
+    peopleTableBody.addEventListener("click", event => {
+        const row = event.target.closest("tr[data-person-id]");
+        if (!row) return;
+
+        const person = getPersonById(row.dataset.personId);
+        if (person) openPersonDetails(person);
+    });
+
+    peopleTableBody.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+
+        const row = event.target.closest("tr[data-person-id]");
+        if (!row) return;
+
+        event.preventDefault();
+        row.click();
+    });
+}
+
+
 // ============================================================
-// INITIAL PAGE
+// PEOPLE — DETAILS POPUP
+// ============================================================
+
+function openPersonDetails(person) {
+    if (!personDetailsPanel || !person) return;
+
+    selectedPersonId = person.personId;
+
+    const details = {
+        "detail-person-id": person.personId,
+        "detail-person-name": person.name,
+        "detail-person-role": person.role,
+        "detail-person-contact": person.contact || "Not provided",
+        "detail-person-email": person.email || "Not provided",
+        "detail-person-cases": getPersonCaseText(person.personId)
+    };
+
+    Object.entries(details).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
+
+    personDetailsPanel.hidden = false;
+}
+
+const closePersonDetailsButton =
+    document.getElementById("close-person-details");
+
+if (closePersonDetailsButton) {
+    closePersonDetailsButton.addEventListener("click", () => {
+        if (personDetailsPanel) personDetailsPanel.hidden = true;
+    });
+}
+
+function setupPersonEditButton() {
+    if (!personDetailsPanel) return;
+
+    const heading = personDetailsPanel.querySelector(".panel-heading");
+
+    if (!heading || document.getElementById("edit-person-button")) return;
+
+    const button = document.createElement("button");
+    button.id = "edit-person-button";
+    button.type = "button";
+    button.className = "primary-button";
+    button.textContent = "Edit Person";
+
+    if (
+        closePersonDetailsButton &&
+        heading.contains(closePersonDetailsButton)
+    ) {
+        heading.insertBefore(button, closePersonDetailsButton);
+    } else {
+        heading.appendChild(button);
+    }
+
+    button.addEventListener("click", () => {
+        const person = getPersonById(selectedPersonId);
+        if (person) openPersonForm(person);
+    });
+}
+
+setupPersonEditButton();
+
+
+// ============================================================
+// PEOPLE — CREATE AND EDIT FORM
+// ============================================================
+
+function openPersonForm(person = null) {
+    if (!personForm || !personFormPanel) return;
+
+    personForm.reset();
+    editingPersonId = person ? person.personId : null;
+
+    const heading = document.getElementById("person-form-heading");
+    const submitButton = document.getElementById("save-person-button");
+
+    if (person) {
+        Object.entries(person).forEach(([name, value]) => {
+            setFieldValue(personForm, name, value);
+        });
+
+        if (heading) heading.textContent = "Edit Person";
+        if (submitButton) submitButton.textContent = "Save Changes";
+
+        if (personDetailsPanel) personDetailsPanel.hidden = true;
+    } else {
+        if (heading) heading.textContent = "Register Person";
+        if (submitButton) submitButton.textContent = "Register Person";
+    }
+
+    personFormPanel.hidden = false;
+}
+
+function closePersonForm() {
+    if (!personForm || !personFormPanel) return;
+
+    personFormPanel.hidden = true;
+    personForm.reset();
+    editingPersonId = null;
+
+    const heading = document.getElementById("person-form-heading");
+    const submitButton = document.getElementById("save-person-button");
+
+    if (heading) heading.textContent = "Register Person";
+    if (submitButton) submitButton.textContent = "Register Person";
+}
+
+const openPersonFormButton = document.getElementById("open-person-form");
+const closePersonFormButton = document.getElementById("close-person-form");
+const cancelPersonFormButton = document.getElementById("cancel-person-form");
+
+if (openPersonFormButton) {
+    openPersonFormButton.addEventListener("click", () => openPersonForm());
+}
+if (closePersonFormButton) {
+    closePersonFormButton.addEventListener("click", closePersonForm);
+}
+if (cancelPersonFormButton) {
+    cancelPersonFormButton.addEventListener("click", closePersonForm);
+}
+
+if (personForm) {
+    personForm.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!personForm.reportValidity()) return;
+
+        const data = new FormData(personForm);
+
+        const record = {
+            personId: String(data.get("personId") || "").trim(),
+            name: String(data.get("name") || "").trim(),
+            role: String(data.get("role") || "").trim(),
+            contact: String(data.get("contact") || "").trim(),
+            email: String(data.get("email") || "").trim()
+        };
+
+        const duplicate = demoPeople.some(item =>
+            item.personId.toLowerCase() === record.personId.toLowerCase()
+            && item.personId !== editingPersonId
+        );
+
+        if (duplicate) {
+            alert("That Person ID already exists.");
+            return;
+        }
+
+        if (
+            record.email &&
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)
+        ) {
+            alert("Please enter a valid email address.");
+            return;
+        }
+
+        if (editingPersonId !== null) {
+            const index = demoPeople.findIndex(
+                item => item.personId === editingPersonId
+            );
+
+            if (index < 0) {
+                alert("Person not found.");
+                return;
+            }
+
+            demoPeople[index] = record;
+            selectedPersonId = record.personId;
+
+            closePersonForm();
+
+            if (personSearch) personSearch.value = "";
+            if (personRoleFilter) personRoleFilter.value = "";
+
+            renderPeople();
+            renderCasePeople();
+            openPersonDetails(record);
+
+            alert("Demo person updated. Not saved to the database.");
+        } else {
+            demoPeople.unshift(record);
+
+            closePersonForm();
+
+            if (personSearch) personSearch.value = "";
+            if (personRoleFilter) personRoleFilter.value = "";
+
+            populateCasePersonOptions();
+            renderPeople();
+            renderCasePeople();
+
+            alert("Demo person registered. Not saved to the database.");
+        }
+    });
+}
+
+
+// ============================================================
+// CASE-PERSON ASSOCIATIONS — DEMO MODULE
+// ============================================================
+
+const casePersonForm = document.getElementById("case-person-form");
+const casePersonFormPanel = document.getElementById("case-person-form-panel");
+const casePersonTableBody = document.getElementById("case-person-table-body");
+const casePersonCount = document.getElementById("case-person-count");
+const emptyCasePeople = document.getElementById("empty-case-people");
+const casePersonSearch = document.getElementById("case-person-search");
+const casePersonRoleFilter = document.getElementById("case-person-role-filter");
+
+function populateCasePersonOptions() {
+    if (!casePersonForm) return;
+
+    const caseSelect = casePersonForm.elements.namedItem("caseNumber");
+    const personSelect = casePersonForm.elements.namedItem("personId");
+
+    if (caseSelect) {
+        const previousValue = caseSelect.value;
+
+        caseSelect.innerHTML =
+            '<option value="">Select a case</option>'
+            + demoCases.map(item => `
+                <option value="${escapeHTML(item.caseNumber)}">
+                    ${escapeHTML(item.caseNumber)} — ${escapeHTML(item.title)}
+                </option>
+            `).join("");
+
+        if (demoCases.some(item => item.caseNumber === previousValue)) {
+            caseSelect.value = previousValue;
+        }
+    }
+
+    if (personSelect) {
+        const previousValue = personSelect.value;
+
+        personSelect.innerHTML =
+            '<option value="">Select a person</option>'
+            + demoPeople.map(item => `
+                <option value="${escapeHTML(item.personId)}">
+                    ${escapeHTML(item.personId)} — ${escapeHTML(item.name)}
+                </option>
+            `).join("");
+
+        if (demoPeople.some(item => item.personId === previousValue)) {
+            personSelect.value = previousValue;
+        }
+    }
+}
+
+function renderCasePeople() {
+    if (!casePersonTableBody) return;
+
+    const query = casePersonSearch
+        ? casePersonSearch.value.trim().toLowerCase()
+        : "";
+
+    const selectedRelationship = casePersonRoleFilter
+        ? casePersonRoleFilter.value
+        : "";
+
+    const filtered = demoCasePeople.filter(link => {
+        const caseRecord = getCaseByNumber(link.caseNumber);
+        const person = getPersonById(link.personId);
+
+        const searchable = [
+            link.caseNumber,
+            caseRecord?.title || "",
+            link.personId,
+            person?.name || "",
+            link.relationship
+        ].join(" ").toLowerCase();
+
+        return searchable.includes(query)
+            && (!selectedRelationship ||
+                link.relationship === selectedRelationship);
+    });
+
+    casePersonTableBody.innerHTML = filtered.map(link => {
+        const caseRecord = getCaseByNumber(link.caseNumber);
+        const person = getPersonById(link.personId);
+
+        return `
+            <tr>
+                <td>${escapeHTML(link.caseNumber)}</td>
+                <td>${escapeHTML(caseRecord?.title || "Case unavailable")}</td>
+                <td>${escapeHTML(link.personId)}</td>
+                <td>${escapeHTML(person?.name || "Person unavailable")}</td>
+                <td>${escapeHTML(link.relationship)}</td>
+                <td>
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        data-unlink-case-person
+                        data-case-number="${escapeHTML(link.caseNumber)}"
+                        data-person-id="${escapeHTML(link.personId)}">
+                        Unlink
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    if (casePersonCount) {
+        casePersonCount.textContent =
+            `${filtered.length} of ${demoCasePeople.length} associations`;
+    }
+
+    if (emptyCasePeople) {
+        emptyCasePeople.hidden = filtered.length !== 0;
+    }
+}
+
+function openCasePersonForm() {
+    if (!casePersonForm || !casePersonFormPanel) return;
+
+    casePersonForm.reset();
+    populateCasePersonOptions();
+    casePersonFormPanel.hidden = false;
+}
+
+function closeCasePersonForm() {
+    if (!casePersonForm || !casePersonFormPanel) return;
+
+    casePersonFormPanel.hidden = true;
+    casePersonForm.reset();
+}
+
+const openCasePersonFormButton =
+    document.getElementById("open-case-person-form");
+const closeCasePersonFormButton =
+    document.getElementById("close-case-person-form");
+const cancelCasePersonFormButton =
+    document.getElementById("cancel-case-person-form");
+
+if (openCasePersonFormButton) {
+    openCasePersonFormButton.addEventListener("click", openCasePersonForm);
+}
+if (closeCasePersonFormButton) {
+    closeCasePersonFormButton.addEventListener("click", closeCasePersonForm);
+}
+if (cancelCasePersonFormButton) {
+    cancelCasePersonFormButton.addEventListener("click", closeCasePersonForm);
+}
+
+if (casePersonForm) {
+    casePersonForm.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!casePersonForm.reportValidity()) return;
+
+        const data = new FormData(casePersonForm);
+
+        const caseNumber = String(data.get("caseNumber") || "").trim();
+        const personId = String(data.get("personId") || "").trim();
+        const relationship = String(data.get("relationship") || "").trim();
+
+        if (!getCaseByNumber(caseNumber)) {
+            alert("Please select a valid case.");
+            return;
+        }
+
+        if (!getPersonById(personId)) {
+            alert("Please select a valid person.");
+            return;
+        }
+
+        const duplicate = demoCasePeople.some(link =>
+            link.caseNumber === caseNumber &&
+            link.personId === personId
+        );
+
+        if (duplicate) {
+            alert("This person is already linked to this case.");
+            return;
+        }
+
+        demoCasePeople.push({
+            caseNumber,
+            personId,
+            relationship
+        });
+
+        closeCasePersonForm();
+
+        if (casePersonSearch) casePersonSearch.value = "";
+        if (casePersonRoleFilter) casePersonRoleFilter.value = "";
+
+        renderCasePeople();
+        renderPeople();
+
+        if (
+            selectedPersonId === personId &&
+            personDetailsPanel &&
+            !personDetailsPanel.hidden
+        ) {
+            const person = getPersonById(personId);
+            if (person) openPersonDetails(person);
+        }
+
+        alert("Person linked to case in demo mode. Not saved to the database.");
+    });
+}
+
+if (casePersonSearch) {
+    casePersonSearch.addEventListener("input", renderCasePeople);
+}
+if (casePersonRoleFilter) {
+    casePersonRoleFilter.addEventListener("change", renderCasePeople);
+}
+
+if (casePersonTableBody) {
+    casePersonTableBody.addEventListener("click", event => {
+        const button = event.target.closest("[data-unlink-case-person]");
+        if (!button) return;
+
+        const caseNumber = button.dataset.caseNumber;
+        const personId = button.dataset.personId;
+
+        const index = demoCasePeople.findIndex(link =>
+            link.caseNumber === caseNumber &&
+            link.personId === personId
+        );
+
+        if (index === -1) {
+            alert("Association not found.");
+            return;
+        }
+
+        const person = getPersonById(personId);
+
+        if (!confirm(
+            `Unlink ${person?.name || personId} from ${caseNumber}? ` +
+            "The person record will not be deleted."
+        )) {
+            return;
+        }
+
+        demoCasePeople.splice(index, 1);
+
+        renderCasePeople();
+        renderPeople();
+
+        if (
+            selectedPersonId === personId &&
+            personDetailsPanel &&
+            !personDetailsPanel.hidden &&
+            person
+        ) {
+            openPersonDetails(person);
+        }
+
+        alert("Association removed in demo mode. The person record remains.");
+    });
+}
+
+
+// ============================================================
+// INITIALIZATION
 // ============================================================
 
 populateInvestigatorFilters();
 populateAssignmentOptions();
+populateCasePersonOptions();
+
+renderCases();
+renderInvestigators();
+renderAssignments();
+renderPeople();
+renderCasePeople();
+
 activateView("dashboard");

@@ -1209,3 +1209,277 @@ tbody tr:last-child td {
     }
 }
 
+/* ===== People module ===== */
+
+#people-view {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#people-view .cases-toolbar,
+#people-view .cases-table-panel {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#people-view .people-filters {
+    display: grid;
+    grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+#people-view .people-filters input,
+#people-view .people-filters select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+#people-view .table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#people-view .table-wrapper table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: collapse;
+}
+
+#people-view .table-wrapper th,
+#people-view .table-wrapper td {
+    white-space: nowrap;
+}
+
+#person-form-panel[hidden],
+#person-details-panel[hidden] {
+    display: none !important;
+}
+
+#person-form-panel,
+#person-details-panel {
+    position: fixed;
+    z-index: 1100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(700px, calc(100vw - 32px));
+    max-height: 85vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 28px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, #172642, #0e192d);
+    border: 1px solid rgba(111, 168, 255, 0.34);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.62);
+    animation: caseModalEnter 180ms ease-out;
+}
+
+#person-form-panel::before,
+#person-details-panel::before {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    transform: translate(-50%, -50%);
+    background: rgba(2, 8, 20, 0.78);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    pointer-events: none;
+}
+
+#person-form-panel .panel-heading,
+#person-details-panel .panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #2a3b57;
+}
+
+#person-form-panel .panel-heading h2,
+#person-details-panel .panel-heading h2 {
+    color: #f4f7ff;
+}
+
+#person-form-panel .form-grid {
+    width: 100%;
+}
+
+#person-form-panel .form-grid label {
+    min-width: 0;
+}
+
+#person-form-panel input,
+#person-form-panel select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#person-details-panel .case-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+#person-details-panel .case-details-grid p {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 650px) {
+    #people-view .people-filters {
+        grid-template-columns: 1fr;
+    }
+
+    #person-form-panel,
+    #person-details-panel {
+        padding: 20px;
+        max-height: 88vh;
+    }
+
+    #person-details-panel .case-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ===== Case-Person Associations module ===== */
+#case-people-view {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#case-people-view .cases-toolbar,
+#case-people-view .cases-table-panel {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#case-people-view .case-person-filters {
+    display: grid;
+    grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+#case-people-view .case-person-filters input,
+#case-people-view .case-person-filters select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+#case-people-view .table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#case-people-view .table-wrapper table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+}
+
+#case-people-view .table-wrapper th,
+#case-people-view .table-wrapper td {
+    white-space: nowrap;
+}
+
+#case-person-form-panel[hidden] {
+    display: none !important;
+}
+
+#case-person-form-panel {
+    position: fixed;
+    z-index: 1100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(680px, calc(100vw - 32px));
+    max-height: 85vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 28px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, #172642, #0e192d);
+    border: 1px solid rgba(111, 168, 255, .34);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .62);
+    animation: caseModalEnter 180ms ease-out;
+}
+
+#case-person-form-panel::before {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    transform: translate(-50%, -50%);
+    background: rgba(2, 8, 20, .78);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    pointer-events: none;
+}
+
+#case-person-form-panel .panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #2a3b57;
+}
+
+#case-person-form-panel .panel-heading h2 {
+    color: #f4f7ff;
+}
+
+#case-person-form-panel .form-grid {
+    width: 100%;
+}
+
+#case-person-form-panel .form-grid label {
+    min-width: 0;
+}
+
+#case-person-form-panel input,
+#case-person-form-panel select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 650px) {
+    #case-people-view .case-person-filters {
+        grid-template-columns: 1fr;
+    }
+
+    #case-person-form-panel {
+        padding: 20px;
+        max-height: 88vh;
+    }
+}
+
