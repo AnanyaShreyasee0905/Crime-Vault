@@ -156,6 +156,234 @@
             </section>
 
             <footer class="page-footer">
+                <section id="cases-view" class="cases-view" hidden>
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">CASE MANAGEMENT</p>
+            <h2>All Cases</h2>
+            <p class="muted-text">Search, review and register investigation cases.</p>
+        </div>
+        <button id="open-case-form" class="primary-button">
+            + Create Case
+        </button>
+    </div>
+
+    <div class="case-filters">
+        <input
+            type="search"
+            id="case-search"
+            placeholder="Search case number, title or type..."
+            aria-label="Search cases"
+        >
+
+        <select id="status-filter" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Closed">Closed</option>
+        </select>
+
+        <select id="priority-filter" aria-label="Filter by priority">
+            <option value="">All priorities</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+    </div>
+
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Case Register</h2>
+                <p id="case-count" class="muted-text">0 cases</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Case Number</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Date Reported</th>
+                    </tr>
+                </thead>
+                <tbody id="cases-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-cases" class="empty-state" hidden>
+            No cases match your search or filters.
+        </p>
+    </div>
+
+    
+<!-- Case details panel: demo mode for now, API-ready structure -->
+<section
+    id="case-details-panel"
+    class="panel case-details-panel"
+    hidden
+    aria-labelledby="case-details-title"
+>
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">CASE RECORD</p>
+            <h2 id="case-details-title">Case Details</h2>
+            <p id="case-details-number" class="muted-text"></p>
+        </div>
+
+        <button
+            type="button"
+            id="close-case-details"
+            class="secondary-button"
+        >
+            Close
+        </button>
+    </div>
+
+    <div class="case-details-grid">
+        <div>
+            <span class="detail-label">Case Title</span>
+            <p id="detail-case-title"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Case Type</span>
+            <p id="detail-case-type"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Priority</span>
+            <p id="detail-case-priority"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Status</span>
+            <p id="detail-case-status"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Location</span>
+            <p id="detail-case-location"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Date Reported</span>
+            <p id="detail-case-date-reported"></p>
+        </div>
+
+        <div>
+            <span class="detail-label">Date Opened</span>
+            <p id="detail-case-date-opened"></p>
+        </div>
+
+        <div class="full-width">
+            <span class="detail-label">Description</span>
+            <p id="detail-case-description"></p>
+        </div>
+    </div>
+</section>
+
+
+    <section id="case-form-panel" class="panel case-form-panel" hidden>
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">NEW RECORD</p>
+                <h2>Register a Case</h2>
+            </div>
+            <button type="button" id="close-case-form"
+                    class="secondary-button">Cancel</button>
+        </div>
+
+        <form id="case-form">
+            <div class="form-grid">
+                <label>
+                    Case Number *
+                    <input name="caseNumber" required maxlength="30"
+                           placeholder="CV-1004">
+                </label>
+
+                <label>
+                    Case Title *
+                    <input name="title" required maxlength="150"
+                           placeholder="Enter case title">
+                </label>
+
+                <label>
+                    Case Type *
+                    <select name="caseType" required>
+                        <option value="">Select type</option>
+                        <option>Theft</option>
+                        <option>Fraud</option>
+                        <option>Burglary</option>
+                        <option>Assault</option>
+                        <option>Cybercrime</option>
+                        <option>Other</option>
+                    </select>
+                </label>
+
+                <label>
+                    Priority *
+                    <select name="priority" required>
+                        <option value="">Select priority</option>
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </select>
+                </label>
+
+                <label>
+                    Status *
+                    <select name="status" required>
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </label>
+
+                <label>
+                    Location *
+                    <input name="location" required maxlength="200"
+                           placeholder="Enter incident location">
+                </label>
+
+                <label>
+                    Date Reported *
+                    <input name="dateReported" type="date" required>
+                </label>
+
+                <label>
+                    Date Opened
+                    <input name="dateOpened" type="date">
+                </label>
+
+                <label class="full-width">
+                    Description
+                    <textarea name="description" rows="3" maxlength="1000"
+                              placeholder="Describe the reported incident"></textarea>
+                </label>
+            </div>
+
+            <p class="form-note">
+                Demo mode: this record stays in browser memory and is not
+                saved to Oracle or the server.
+            </p>
+
+            <div class="form-actions">
+                <button type="button" id="cancel-case-form"
+                        class="secondary-button">Cancel</button>
+                <button type="submit" class="primary-button">
+                    Register Case
+                </button>
+            </div>
+        </form>
+    </section>
+</section>
+</escape>
                 <span>CrimeVault · Crime Investigation, Evidence & Case Management</span>
                 <span>Prototype · Sample records only</span>
             </footer>
