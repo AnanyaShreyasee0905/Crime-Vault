@@ -900,3 +900,312 @@ tbody tr:last-child td {
         animation: none;
     }
 }
+
+
+/* ===== CrimeVault: Investigator Popup Cards ===== */
+
+#investigator-details-panel[hidden],
+#investigator-form-panel[hidden] {
+    display: none !important;
+}
+
+#investigator-details-panel,
+#investigator-form-panel {
+    position: fixed;
+    z-index: 1100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: min(720px, calc(100vw - 36px));
+    max-width: 720px;
+    max-height: 84vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 30px;
+
+    color: var(--text);
+    background: linear-gradient(145deg, #172642, #0e192d);
+    border: 1px solid rgba(111, 168, 255, 0.34);
+    border-radius: 22px;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.62),
+        0 8px 26px rgba(39, 115, 220, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+    animation: caseModalEnter 180ms ease-out;
+}
+
+/* Darkened, blurred backdrop */
+#investigator-details-panel::before,
+#investigator-form-panel::before {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    transform: translate(-50%, -50%);
+
+    background: rgba(2, 8, 20, 0.78);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    pointer-events: none;
+}
+
+#investigator-details-panel .panel-heading,
+#investigator-form-panel .panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2a3b57;
+}
+
+#investigator-details-panel .panel-heading h2,
+#investigator-form-panel .panel-heading h2 {
+    color: #f4f7ff;
+    margin: 8px 0;
+}
+
+#investigator-details-panel .case-details-grid,
+#investigator-form-panel .form-grid {
+    width: 100%;
+}
+
+#investigator-details-panel .detail-label {
+    color: #91a8c7;
+}
+
+#investigator-details-panel .case-details-grid p {
+    color: #f4f7ff;
+    overflow-wrap: anywhere;
+}
+
+#investigator-details-panel .panel-heading button,
+#investigator-form-panel .panel-heading button {
+    flex-shrink: 0;
+}
+
+@media (max-width: 550px) {
+    #investigator-details-panel,
+    #investigator-form-panel {
+        width: calc(100vw - 24px);
+        padding: 20px;
+        max-height: 88vh;
+    }
+}
+
+
+/* ===== Investigators: wider layout and filters ===== */
+
+#investigators-view {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#investigators-view .cases-toolbar {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#investigators-view .investigator-filters {
+    display: grid;
+    grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) minmax(160px, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+#investigators-view .investigator-filters input,
+#investigators-view .investigator-filters select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+#investigators-view .cases-table-panel {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+#investigators-view .table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#investigators-view .table-wrapper table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+}
+
+#investigators-view .table-wrapper th,
+#investigators-view .table-wrapper td {
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    #investigators-view .investigator-filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    #investigators-view .investigator-filters input {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 560px) {
+    #investigators-view .investigator-filters {
+        grid-template-columns: 1fr;
+    }
+
+    #investigators-view .investigator-filters input {
+        grid-column: auto;
+    }
+}
+
+
+/* ===== Case Assignments page ===== */
+
+#assignments-view {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#assignments-view .cases-toolbar,
+#assignments-view .cases-table-panel {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#assignments-view .assignment-filters {
+    display: grid;
+    grid-template-columns: minmax(240px, 2fr) minmax(200px, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+#assignments-view .assignment-filters input,
+#assignments-view .assignment-filters select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+#assignments-view .table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#assignments-view .table-wrapper table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+}
+
+#assignments-view .table-wrapper th,
+#assignments-view .table-wrapper td {
+    white-space: nowrap;
+}
+
+#assignment-form-panel[hidden] {
+    display: none !important;
+}
+
+#assignment-form-panel {
+    position: fixed;
+    z-index: 1100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(680px, calc(100vw - 32px));
+    max-height: 85vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 28px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, #172642, #0e192d);
+    border: 1px solid rgba(111, 168, 255, 0.34);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.62);
+    animation: caseModalEnter 180ms ease-out;
+}
+
+#assignment-form-panel::before {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    transform: translate(-50%, -50%);
+    background: rgba(2, 8, 20, 0.78);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    pointer-events: none;
+}
+
+#assignment-form-panel .panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #2a3b57;
+}
+
+#assignment-form-panel .panel-heading h2 {
+    color: #f4f7ff;
+}
+
+#assignment-form-panel .form-grid {
+    width: 100%;
+}
+
+#assignment-form-panel .form-grid label {
+    min-width: 0;
+}
+
+#assignment-form-panel input,
+#assignment-form-panel select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.assignment-history-panel {
+    margin-top: 24px;
+}
+
+@media (max-width: 650px) {
+    #assignments-view .assignment-filters {
+        grid-template-columns: 1fr;
+    }
+
+    #assignment-form-panel {
+        padding: 20px;
+        max-height: 88vh;
+    }
+}
+

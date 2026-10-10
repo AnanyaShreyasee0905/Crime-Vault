@@ -28,6 +28,11 @@
                 <a href="#evidence" class="nav-link" data-view="evidence">◈ Evidence & Custody</a>
                 <a href="#forensics" class="nav-link" data-view="forensics">⌕ Interviews & Forensics</a>
                 <a href="#timeline" class="nav-link" data-view="timeline">◷ Investigation Timeline</a>
+                <a href="#assignments" class="nav-link" data-view="assignments">
+                <span aria-hidden="true">▤</span>
+                <span>Case Assignments</span>
+</a>
+
             </nav>
 
             <div class="sidebar-footer">
@@ -156,6 +161,467 @@
             </section>
 
             <footer class="page-footer">
+
+<!-- ================= CASE ASSIGNMENTS MODULE ================= -->
+
+<section id="assignments-view" class="cases-view" hidden>
+
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">INVESTIGATION MANAGEMENT</p>
+            <h2>Case Assignments</h2>
+            <p class="muted-text">
+                Assign investigators to cases and manage assignment history.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            id="open-assignment-form"
+            class="primary-button"
+        >
+            + Assign Investigator
+        </button>
+    </div>
+
+    <!-- Assignment search and filters -->
+    <div class="case-filters assignment-filters">
+        <input
+            type="search"
+            id="assignment-search"
+            placeholder="Search case number, investigator or role..."
+            aria-label="Search case assignments"
+        >
+
+        <select id="assignment-status-filter"
+                aria-label="Filter assignment status">
+            <option value="">All Assignment Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </div>
+
+    <!-- Assignment register -->
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Assignment Register</h2>
+                <p id="assignment-count" class="muted-text">
+                    0 assignments
+                </p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Case Number</th>
+                        <th>Case Title</th>
+                        <th>Investigator</th>
+                        <th>Badge Number</th>
+                        <th>Role</th>
+                        <th>Assignment Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="assignments-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-assignments" class="empty-state" hidden>
+            No assignments match your search.
+        </p>
+    </div>
+
+    <!-- Assignment history -->
+    <div class="panel cases-table-panel assignment-history-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Assignment History</h2>
+                <p class="muted-text">
+                    Previous and inactive assignments remain visible here.
+                </p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Case Number</th>
+                        <th>Investigator</th>
+                        <th>Role</th>
+                        <th>Assignment Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="assignment-history-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-assignment-history" class="empty-state" hidden>
+            No assignment history is available.
+        </p>
+    </div>
+
+    <!-- Assign Investigator popup -->
+    <section
+        id="assignment-form-panel"
+        class="panel case-form-panel"
+        hidden
+        aria-labelledby="assignment-form-heading"
+    >
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">CASE PERSONNEL</p>
+                <h2 id="assignment-form-heading">Assign Investigator</h2>
+            </div>
+
+            <button
+                type="button"
+                id="close-assignment-form"
+                class="secondary-button"
+            >
+                Close
+            </button>
+        </div>
+
+        <form id="assignment-form">
+            <div class="form-grid">
+
+                <label>
+                    Case *
+                    <select name="caseNumber" required>
+                        <option value="">Select a case</option>
+                    </select>
+                </label>
+
+                <label>
+                    Investigator *
+                    <select name="investigatorId" required>
+                        <option value="">Select an investigator</option>
+                    </select>
+                </label>
+
+                <label>
+                    Assignment Role *
+                    <select name="assignmentRole" required>
+                        <option value="">Select a role</option>
+                        <option value="Lead Investigator">
+                            Lead Investigator
+                        </option>
+                        <option value="Supporting Investigator">
+                            Supporting Investigator
+                        </option>
+                        <option value="Forensic Specialist">
+                            Forensic Specialist
+                        </option>
+                        <option value="Consultant">
+                            Consultant
+                        </option>
+                    </select>
+                </label>
+
+                <label>
+                    Assignment Date *
+                    <input
+                        type="date"
+                        name="assignmentDate"
+                        required
+                    >
+                </label>
+
+            </div>
+
+            <p class="form-note">
+                Demo mode: assignments are stored in browser memory only.
+                No database changes are made.
+            </p>
+
+            <div class="form-actions">
+                <button
+                    type="button"
+                    id="cancel-assignment-form"
+                    class="secondary-button"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Save Assignment
+                </button>
+            </div>
+        </form>
+    </section>
+
+</section>
+
+<!-- ================= END CASE ASSIGNMENTS MODULE ================= -->
+                
+<!-- ================= INVESTIGATORS MODULE ================= -->
+<section id="investigators-view" class="cases-view" hidden>
+
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">PERSONNEL MANAGEMENT</p>
+            <h2>Investigators</h2>
+            <p class="muted-text">
+                Register, search, review and update investigator records.
+            </p>
+        </div>
+
+        <button id="open-investigator-form" class="primary-button">
+            + Register Investigator
+        </button>
+    </div>
+
+    
+<div class="case-filters investigator-filters">
+    <input
+        type="search"
+        id="investigator-search"
+        placeholder="Search name, ID, badge, department..."
+        aria-label="Search investigators"
+    >
+
+    <select
+        id="investigator-department-filter"
+        aria-label="Filter by department"
+    >
+        <option value="">All Departments</option>
+    </select>
+
+    <select
+        id="investigator-rank-filter"
+        aria-label="Filter by rank"
+    >
+        <option value="">All Ranks</option>
+    </select>
+</div>
+
+
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Investigator Register</h2>
+                <p id="investigator-count" class="muted-text">
+                    0 investigators
+                </p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Investigator ID</th>
+                        <th>Name</th>
+                        <th>Badge Number</th>
+                        <th>Department</th>
+                        <th>Rank</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Assigned Case(s)</th>
+                    </tr>
+                </thead>
+                <tbody id="investigators-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-investigators" class="empty-state" hidden>
+            No investigators match your search.
+        </p>
+    </div>
+
+    <!-- Investigator Details Popup -->
+    <section
+        id="investigator-details-panel"
+        class="panel case-details-panel"
+        hidden
+        aria-labelledby="investigator-details-title"
+    >
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">PERSONNEL RECORD</p>
+                <h2 id="investigator-details-title">Investigator Details</h2>
+                <p id="investigator-details-id" class="muted-text"></p>
+            </div>
+
+            <button
+                type="button"
+                id="close-investigator-details"
+                class="secondary-button"
+            >
+                Close
+            </button>
+        </div>
+
+        <div class="case-details-grid">
+            <div>
+                <span class="detail-label">Name</span>
+                <p id="detail-investigator-name"></p>
+            </div>
+
+            <div>
+                <span class="detail-label">Badge Number</span>
+                <p id="detail-investigator-badge"></p>
+            </div>
+
+            <div>
+                <span class="detail-label">Department</span>
+                <p id="detail-investigator-department"></p>
+            </div>
+
+            <div>
+                <span class="detail-label">Rank</span>
+                <p id="detail-investigator-rank"></p>
+            </div>
+
+            <div>
+                <span class="detail-label">Contact</span>
+                <p id="detail-investigator-contact"></p>
+            </div>
+
+            <div>
+                <span class="detail-label">Email</span>
+                <p id="detail-investigator-email"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create / Edit Investigator Form -->
+    <section
+        id="investigator-form-panel"
+        class="panel case-form-panel"
+        hidden
+    >
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">PERSONNEL RECORD</p>
+                <h2 id="investigator-form-heading">
+                    Register Investigator
+                </h2>
+            </div>
+
+            <button
+                type="button"
+                id="close-investigator-form"
+                class="secondary-button"
+            >
+                Cancel
+            </button>
+        </div>
+
+        <form id="investigator-form">
+            <div class="form-grid">
+
+                <label>
+                    Investigator ID *
+                    <input
+                        name="investigatorId"
+                        required
+                        maxlength="30"
+                        placeholder="INV-1001"
+                    >
+                </label>
+
+                <label>
+                    Full Name *
+                    <input
+                        name="name"
+                        required
+                        maxlength="150"
+                        placeholder="Enter investigator name"
+                    >
+                </label>
+
+                <label>
+                    Badge Number *
+                    <input
+                        name="badgeNumber"
+                        required
+                        maxlength="50"
+                        placeholder="BADGE-1001"
+                    >
+                </label>
+
+                <label>
+                    Department *
+                    <input
+                        name="department"
+                        required
+                        maxlength="100"
+                        placeholder="Enter department"
+                    >
+                </label>
+
+                <label>
+                    Rank *
+                    <input
+                        name="rank"
+                        required
+                        maxlength="100"
+                        placeholder="Enter rank"
+                    >
+                </label>
+
+                <label>
+                    Contact *
+                    <input
+                        name="contact"
+                        type="tel"
+                        required
+                        maxlength="30"
+                        placeholder="Enter contact number"
+                    >
+                </label>
+
+                <label class="full-width">
+                    Email *
+                    <input
+                        name="email"
+                        type="email"
+                        required
+                        maxlength="254"
+                        placeholder="name@example.com"
+                    >
+                </label>
+
+            </div>
+
+            <p class="form-note">
+                Demo mode: investigator records remain in browser memory
+                and are not saved to Oracle or a server.
+            </p>
+
+            <div class="form-actions">
+                <button
+                    type="button"
+                    id="cancel-investigator-form"
+                    class="secondary-button"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    id="save-investigator-button"
+                    class="primary-button"
+                >
+                    Register Investigator
+                </button>
+            </div>
+        </form>
+    </section>
+
+</section>
+<!-- ================= END INVESTIGATORS MODULE ================= -->
+
                 <section id="cases-view" class="cases-view" hidden>
     <div class="cases-toolbar">
         <div>
