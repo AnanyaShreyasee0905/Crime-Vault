@@ -25,6 +25,8 @@ const assignmentsView = document.getElementById("assignments-view");
 const peopleView = document.getElementById("people-view");
 const casePeopleView = document.getElementById("case-people-view");
 
+const evidenceView = document.getElementById("evidence-view");
+
 const viewTitles = {
     dashboard: "Dashboard",
     cases: "Cases",
@@ -105,6 +107,36 @@ const personRoleFilter = document.getElementById("person-role-filter");
 const personForm = document.getElementById("person-form");
 const personFormPanel = document.getElementById("person-form-panel");
 const personDetailsPanel = document.getElementById("person-details-panel");
+
+
+/* -------------------- EVIDENCE & CUSTODY ELEMENTS -------------------- */
+
+const evidenceTableBody = document.getElementById("evidence-table-body");
+const evidenceCount = document.getElementById("evidence-count");
+const emptyEvidence = document.getElementById("empty-evidence");
+const evidenceSearch = document.getElementById("evidence-search");
+const evidenceStatusFilter = document.getElementById("evidence-status-filter");
+
+const evidenceForm = document.getElementById("evidence-form");
+const evidenceFormPanel = document.getElementById("evidence-form-panel");
+const evidenceDetailsPanel = document.getElementById("evidence-details-panel");
+const evidenceDetailsContent = document.getElementById("evidence-details-content");
+
+const custodyForm = document.getElementById("custody-form");
+const custodyFormPanel = document.getElementById("custody-form-panel");
+const custodyTableBody = document.getElementById("custody-table-body");
+const custodyCount = document.getElementById("custody-count");
+const emptyCustody = document.getElementById("empty-custody");
+
+const openEvidenceFormButton = document.getElementById("open-evidence-form");
+const closeEvidenceFormButton = document.getElementById("close-evidence-form");
+const cancelEvidenceFormButton = document.getElementById("cancel-evidence-form");
+
+const closeEvidenceDetailsButton = document.getElementById("close-evidence-details");
+const openCustodyFormButton = document.getElementById("open-custody-form");
+
+const closeCustodyFormButton = document.getElementById("close-custody-form");
+const cancelCustodyFormButton = document.getElementById("cancel-custody-form");
 
 
 // ============================================================
@@ -247,6 +279,48 @@ const demoPeople = [
 ];
 
 
+/* =========================================================
+   EVIDENCE & CUSTODY DEMO DATA
+   Demo-only records for frontend testing
+   ========================================================= */
+
+const demoEvidence = [
+    {
+        evidenceId: "EV-1001",
+        caseNumber: "CV-1001",
+        evidenceType: "Mobile Phone",
+        collectionLocation: "Scene A",
+        collectionDateTime: "2026-10-08T10:30",
+        status: "Collected",
+        currentLocation: "Evidence Room A",
+        description: "Mobile phone recovered during the investigation."
+    },
+    {
+        evidenceId: "EV-1002",
+        caseNumber: "CV-1002",
+        evidenceType: "Document",
+        collectionLocation: "Office 204",
+        collectionDateTime: "2026-10-09T14:15",
+        status: "In Storage",
+        currentLocation: "Evidence Locker B",
+        description: "Documents collected for examination."
+    },
+    {
+        evidenceId: "EV-1003",
+        caseNumber: "CV-1003",
+        evidenceType: "Fingerprint Sample",
+        collectionLocation: "Entry Door",
+        collectionDateTime: "2026-10-10T09:00",
+        status: "Under Examination",
+        currentLocation: "Forensic Lab",
+        description: "Fingerprint sample awaiting forensic examination."
+    }
+];
+
+const demoCustodyRecords = [];
+
+
+
 // ============================================================
 // DEMO CASE-PERSON RELATIONSHIPS
 // Kept separate from person records, like a relationship table.
@@ -281,6 +355,9 @@ let editingInvestigatorId = null;
 let selectedInvestigatorId = null;
 let editingPersonId = null;
 let selectedPersonId = null;
+let editingEvidenceId = null;
+let selectedEvidenceId = null;
+
 
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -300,6 +377,464 @@ function setFieldValue(form, fieldName, value) {
 function getCaseByNumber(caseNumber) {
     return demoCases.find(item => item.caseNumber === caseNumber);
 }
+
+function getEvidenceById(evidenceId) {
+    return demoEvidence.find(
+        item => item.evidenceId === evidenceId
+    );
+}
+
+
+/* =========================================================
+   EVIDENCE REGISTER — RENDER DEMO DATA
+   ========================================================= */
+
+function populateEvidenceOptions() {
+    if (!evidenceForm) return;
+
+    const caseSelect = evidenceForm.elements.namedItem("caseNumber");
+    if (!caseSelect) return;
+
+    const previousValue = caseSelect.value;
+
+    caseSelect.innerHTML = `
+        <option value="">Select a case</option>
+        ${demoCases.map(item => `
+            <option value="${escapeHTML(item.caseNumber)}">
+                ${escapeHTML(item.caseNumber)} — ${escapeHTML(item.title)}
+            </option>
+        `).join("")}
+    `;
+
+    if (demoCases.some(item => item.caseNumber === previousValue)) {
+        caseSelect.value = previousValue;
+    }
+}
+
+    function renderEvidence() {
+        if (!evidenceTableBody) return;
+
+        const searchTerm = evidenceSearch
+            ? evidenceSearch.value.trim().toLowerCase()
+            : "";
+
+        const selectedStatus = evidenceStatusFilter
+            ? evidenceStatusFilter.value
+            : "";
+
+        const filteredEvidence = demoEvidence.filter(item => {
+            const searchableText = [
+                item.evidenceId,
+                item.caseNumber,
+                item.evidenceType,
+                item.collectionLocation,
+                item.currentLocation,
+                item.description,
+                item.status
+            ].join(" ").toLowerCase();
+
+            return searchableText.includes(searchTerm) &&
+                (!selectedStatus || item.status === selectedStatus);
+        });
+
+        evidenceTableBody.innerHTML = filteredEvidence.map(item => `
+            <tr>
+                <td>${escapeHTML(item.evidenceId)}</td>
+                <td>${escapeHTML(item.caseNumber)}</td>
+                <td>${escapeHTML(item.evidenceType)}</td>
+                <td>${escapeHTML(item.collectionLocation || "—")}</td>
+                <td>${escapeHTML(item.collectionDateTime || "—")}</td>
+                <td>${escapeHTML(item.status || "—")}</td>
+                <td>${escapeHTML(item.currentLocation || "—")}</td>
+                <td>
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        data-view-evidence="${escapeHTML(item.evidenceId)}">
+                        View
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+
+        if (evidenceCount) {
+            evidenceCount.textContent = String(filteredEvidence.length);
+        }
+
+        if (emptyEvidence) {
+            emptyEvidence.hidden = filteredEvidence.length > 0;
+        }
+    }
+
+
+function renderCustodyHistory(evidenceId = "") {
+    if (!custodyTableBody) return;
+
+    const records = demoCustodyRecords
+        .filter(record => !evidenceId || record.evidenceId === evidenceId)
+        .slice()
+        .sort((a, b) =>
+            new Date(b.transferDateTime) - new Date(a.transferDateTime)
+        );
+
+    custodyTableBody.innerHTML = records.map(record => {
+        const fromInvestigator = demoInvestigators.find(
+            item => item.investigatorId === record.fromInvestigatorId
+        );
+
+        const toInvestigator = demoInvestigators.find(
+            item => item.investigatorId === record.toInvestigatorId
+        );
+
+        return `
+            <tr>
+                <td>${escapeHTML(record.evidenceId)}</td>
+                <td>${escapeHTML(fromInvestigator?.name || record.fromInvestigatorId || "—")}</td>
+                <td>${escapeHTML(toInvestigator?.name || record.toInvestigatorId || "—")}</td>
+                <td>${escapeHTML(record.transferDateTime || "—")}</td>
+                <td>${escapeHTML(record.transferReason || "—")}</td>
+                <td>${escapeHTML(record.location || "—")}</td>
+            </tr>
+        `;
+    }).join("");
+
+
+    
+if (openCustodyFormButton) {
+    openCustodyFormButton.addEventListener("click", () => {
+        const item = getEvidenceById(selectedEvidenceId);
+
+        if (!item) {
+            alert("Please open an evidence record using View first.");
+            return;
+        }
+
+        if (!custodyForm || !custodyFormPanel) {
+            alert("Custody form or popup panel was not found.");
+            return;
+        }
+
+        custodyForm.reset();
+
+        setFieldValue(custodyForm, "evidenceId", item.evidenceId);
+        setFieldValue(custodyForm, "location", item.currentLocation || "");
+
+        const dateField =
+            custodyForm.elements.namedItem("transferDateTime");
+
+        if (dateField) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            dateField.value = now.toISOString().slice(0, 16);
+        }
+
+        if (typeof populateCustodyInvestigatorOptions === "function") {
+            populateCustodyInvestigatorOptions();
+        }
+
+        if (evidenceDetailsPanel) {
+            evidenceDetailsPanel.hidden = true;
+        }
+
+        custodyFormPanel.hidden = false;
+        custodyFormPanel.style.display = "block";
+    });
+}
+
+
+    if (custodyCount) {
+        custodyCount.textContent = String(records.length);
+    }
+
+    if (emptyCustody) {
+        emptyCustody.hidden = records.length > 0;
+    }
+}
+
+
+/* =========================================================
+   CUSTODY TRANSFER — BUTTONS AND SAVE HANDLER
+   Add this block only once.
+   ========================================================= */
+
+// Close button
+if (closeCustodyFormButton) {
+    closeCustodyFormButton.addEventListener("click", () => {
+        custodyFormPanel.hidden = true;
+        custodyFormPanel.style.display = "none";
+    });
+}
+
+// Cancel button
+if (cancelCustodyFormButton) {
+    cancelCustodyFormButton.addEventListener("click", () => {
+        custodyFormPanel.hidden = true;
+        custodyFormPanel.style.display = "none";
+
+        if (custodyForm) {
+            custodyForm.reset();
+        }
+    });
+}
+
+// Save transfer
+if (custodyForm) {
+    custodyForm.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const readValue = name =>
+            custodyForm.elements.namedItem(name)?.value.trim() || "";
+
+        const evidenceId = readValue("evidenceId");
+        const fromInvestigatorId = readValue("fromInvestigatorId");
+        const toInvestigatorId = readValue("toInvestigatorId");
+        const transferDateTime = readValue("transferDateTime");
+        const location = readValue("location");
+        const transferReason = readValue("transferReason");
+        const remarks = readValue("remarks");
+
+        const evidence = getEvidenceById(evidenceId);
+
+        if (!evidence) {
+            alert("Evidence record not found.");
+            return;
+        }
+
+        if (
+            !fromInvestigatorId ||
+            !toInvestigatorId ||
+            !transferDateTime ||
+            !location ||
+            !transferReason
+        ) {
+            alert("Please complete all required fields.");
+            return;
+        }
+
+        if (fromInvestigatorId === toInvestigatorId) {
+            alert("Select two different investigators.");
+            return;
+        }
+
+        const validInvestigator = id =>
+            demoInvestigators.some(
+                investigator => investigator.investigatorId === id
+            );
+
+        if (
+            !validInvestigator(fromInvestigatorId) ||
+            !validInvestigator(toInvestigatorId)
+        ) {
+            alert("Please select valid investigators.");
+            return;
+        }
+
+        if (Number.isNaN(Date.parse(transferDateTime))) {
+            alert("Please enter a valid transfer date and time.");
+            return;
+        }
+
+        demoCustodyRecords.push({
+            transferId: `CTR-${Date.now()}`,
+            evidenceId,
+            fromInvestigatorId,
+            toInvestigatorId,
+            transferDateTime,
+            location,
+            transferReason,
+            remarks
+        });
+
+        evidence.currentLocation = location;
+
+        custodyFormPanel.hidden = true;
+        custodyFormPanel.style.display = "none";
+        custodyForm.reset();
+
+        renderEvidence();
+        renderCustodyHistory();
+
+        alert("Custody transfer recorded successfully.");
+    });
+}
+
+
+
+/* Handle clicks on Evidence Register View buttons */
+if (evidenceTableBody) {
+    evidenceTableBody.addEventListener("click", (event) => {
+        const viewButton = event.target.closest("[data-view-evidence]");
+        if (!viewButton) return;
+
+        const evidenceId = viewButton.dataset.viewEvidence;
+        const item = getEvidenceById(evidenceId);
+
+        if (!item) {
+            alert("Evidence record not found.");
+            return;
+        }
+
+        selectedEvidenceId = item.evidenceId;
+
+        if (evidenceDetailsContent) {
+            evidenceDetailsContent.innerHTML = `
+                <p><strong>Evidence ID:</strong> ${escapeHTML(item.evidenceId)}</p>
+                <p><strong>Case Number:</strong> ${escapeHTML(item.caseNumber)}</p>
+                <p><strong>Evidence Type:</strong> ${escapeHTML(item.evidenceType)}</p>
+                <p><strong>Collection Location:</strong> ${escapeHTML(item.collectionLocation || "—")}</p>
+                <p><strong>Collection Date:</strong> ${escapeHTML(item.collectionDateTime || "—")}</p>
+                <p><strong>Status:</strong> ${escapeHTML(item.status || "—")}</p>
+                <p><strong>Current Location:</strong> ${escapeHTML(item.currentLocation || "—")}</p>
+                <p><strong>Description:</strong> ${escapeHTML(item.description || "—")}</p>
+            `;
+        }
+
+        if (evidenceDetailsPanel) {
+    evidenceDetailsPanel.hidden = false;
+    evidenceDetailsPanel.style.display = "block";
+}
+
+
+/* Close the Evidence Details popup */
+const evidenceCloseButton =
+    document.getElementById("close-evidence-details");
+
+if (evidenceCloseButton) {
+    evidenceCloseButton.addEventListener("click", () => {
+        if (evidenceDetailsPanel) {
+            evidenceDetailsPanel.hidden = true;
+            evidenceDetailsPanel.style.display = "none";
+        }
+    });
+}
+
+
+/* Save newly registered evidence */
+if (evidenceForm) {
+    evidenceForm.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const readValue = name =>
+            evidenceForm.elements.namedItem(name)?.value.trim() || "";
+
+        const evidenceId = readValue("evidenceId");
+        const caseNumber = readValue("caseNumber");
+        const evidenceType = readValue("evidenceType");
+        const collectionLocation = readValue("collectionLocation");
+        const collectionDateTime = readValue("collectionDateTime");
+        const status = readValue("status");
+        const currentLocation = readValue("currentLocation");
+        const description = readValue("description");
+
+        if (
+            !evidenceId || !caseNumber || !evidenceType ||
+            !collectionLocation || !collectionDateTime ||
+            !status || !currentLocation
+        ) {
+            alert("Please complete all required fields.");
+            return;
+        }
+
+        if (!demoCases.some(item => item.caseNumber === caseNumber)) {
+            alert("Please select a valid case.");
+            return;
+        }
+
+        if (demoEvidence.some(
+            item => item.evidenceId.toLowerCase() === evidenceId.toLowerCase()
+        )) {
+            alert("That Evidence ID already exists.");
+            return;
+        }
+
+        if (Number.isNaN(Date.parse(collectionDateTime))) {
+            alert("Enter a valid collection date and time.");
+            return;
+        }
+
+        demoEvidence.push({
+            evidenceId,
+            caseNumber,
+            evidenceType,
+            collectionLocation,
+            collectionDateTime,
+            status,
+            currentLocation,
+            description
+        });
+
+        evidenceForm.reset();
+
+        if (evidenceFormPanel) {
+            evidenceFormPanel.hidden = true;
+            evidenceFormPanel.style.display = "none";
+        }
+
+        if (evidenceSearch) evidenceSearch.value = "";
+        if (evidenceStatusFilter) evidenceStatusFilter.value = "";
+
+        renderEvidence();
+        alert("Evidence registered successfully!");
+    });
+}
+
+
+    });
+}
+
+
+    if (evidenceSearch) {
+        evidenceSearch.addEventListener("input", renderEvidence);
+    }
+
+if (evidenceStatusFilter) {
+    evidenceStatusFilter.addEventListener("change", renderEvidence);
+}
+
+
+/* =========================================================
+   EVIDENCE REGISTER — OPEN AND CLOSE FORM
+   ========================================================= */
+
+function openEvidenceForm() {
+    if (!evidenceForm || !evidenceFormPanel) return;
+
+    evidenceForm.reset();
+    populateEvidenceOptions();
+
+    const idInput = evidenceForm.elements.namedItem("evidenceId");
+    if (idInput) idInput.readOnly = false;
+
+    editingEvidenceId = null;
+    evidenceFormPanel.hidden = false;
+    evidenceFormPanel.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+function closeEvidenceForm() {
+    if (evidenceFormPanel) {
+        evidenceFormPanel.hidden = true;
+    }
+
+    if (evidenceForm) evidenceForm.reset();
+
+    editingEvidenceId = null;
+}
+
+if (openEvidenceFormButton) {
+    openEvidenceFormButton.addEventListener("click", openEvidenceForm);
+}
+
+if (closeEvidenceFormButton) {
+    closeEvidenceFormButton.addEventListener("click", closeEvidenceForm);
+}
+
+if (cancelEvidenceFormButton) {
+    cancelEvidenceFormButton.addEventListener("click", closeEvidenceForm);
+}
+
 
 function getInvestigatorById(investigatorId) {
     return demoInvestigators.find(
@@ -351,6 +886,7 @@ function getAssignmentStatusClass(status) {
    NAVIGATION
    ============================================================ */
 
+
 function activateView(viewName) {
     navigationLinks.forEach(link => {
         const active = link.dataset.view === viewName;
@@ -373,15 +909,18 @@ function activateView(viewName) {
     const showAssignments = viewName === "assignments";
     const showPeople = viewName === "people";
     const showCasePeople = viewName === "case-people";
+    const showEvidence = viewName === "evidence";
 
     dashboardSections.forEach(section => {
         if (section) {
-            section.hidden =
+            section.hidden = (
                 showCases ||
                 showInvestigators ||
                 showAssignments ||
                 showPeople ||
-                showCasePeople;
+                showCasePeople ||
+                showEvidence
+            );
         }
     });
 
@@ -390,33 +929,38 @@ function activateView(viewName) {
     if (assignmentsView) assignmentsView.hidden = !showAssignments;
     if (peopleView) peopleView.hidden = !showPeople;
     if (casePeopleView) casePeopleView.hidden = !showCasePeople;
+    if (evidenceView) evidenceView.hidden = !showEvidence;
 
-    if (
-        viewName !== "dashboard" &&
-        !showCases &&
-        !showInvestigators &&
-        !showAssignments &&
-        !showPeople &&
-        !showCasePeople
-    ) {
-        console.log(`${viewName} module is planned but not implemented yet.`);
+    if (showCases) {
+        renderCases();
     }
 
-    if (showCases) renderCases();
-    if (showInvestigators) renderInvestigators();
+    if (showInvestigators) {
+        renderInvestigators();
+    }
 
     if (showAssignments) {
         populateAssignmentOptions();
         renderAssignments();
     }
 
-    if (showPeople) renderPeople();
+    if (showPeople) {
+        renderPeople();
+    }
 
     if (showCasePeople) {
         populateCasePersonOptions();
         renderCasePeople();
     }
+
+    if (showEvidence) {
+        populateEvidenceOptions();
+        populateCustodyInvestigatorOptions();
+        renderEvidence();
+        renderCustodyHistory();
+    }
 }
+
 
 navigationLinks.forEach(link => {
     link.addEventListener("click", event => {
@@ -1660,6 +2204,35 @@ function populateCasePersonOptions() {
         }
     }
 }
+
+
+
+function populateCustodyInvestigatorOptions() {
+    const fromSelect = custodyForm?.elements.namedItem("fromInvestigatorId");
+    const toSelect = custodyForm?.elements.namedItem("toInvestigatorId");
+
+    [fromSelect, toSelect].forEach((select) => {
+        if (!select) return;
+
+        const previousValue = select.value;
+
+        select.innerHTML = `
+            <option value="">Select investigator</option>
+            ${demoInvestigators.map((investigator) => `
+                <option value="${escapeHTML(investigator.investigatorId)}">
+                    ${escapeHTML(investigator.investigatorId)} — ${escapeHTML(investigator.name)}
+                </option>
+            `).join("")}
+        `;
+
+        if (demoInvestigators.some(
+            investigator => investigator.investigatorId === previousValue
+        )) {
+            select.value = previousValue;
+        }
+    });
+}
+
 
 function renderCasePeople() {
     if (!casePersonTableBody) return;

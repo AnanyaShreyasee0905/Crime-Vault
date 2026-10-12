@@ -1483,3 +1483,173 @@ tbody tr:last-child td {
     }
 }
 
+
+/* =====================================================
+   EVIDENCE & CUSTODY — FULL-WIDTH LAYOUT
+   ===================================================== */
+
+#evidence-view {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#evidence-view .cases-toolbar,
+#evidence-view .section-heading,
+#evidence-view .filters,
+#evidence-view .table-card,
+#evidence-view .content-card,
+#evidence-view .evidence-card,
+#evidence-view .custody-card {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+#evidence-view .table-card,
+#evidence-view .content-card,
+#evidence-view .evidence-card,
+#evidence-view .custody-card {
+    overflow-x: auto;
+}
+
+#evidence-view table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+#evidence-view th,
+#evidence-view td {
+    white-space: nowrap;
+}
+
+
+/* =====================================================
+   CRIMEVAULT — EVIDENCE MODALS AND READABILITY
+   ===================================================== */
+
+#evidence-view {
+    width: 100%;
+    max-width: none;
+}
+
+#evidence-view .panel,
+#evidence-view .case-filters {
+    box-sizing: border-box;
+    max-width: none;
+}
+
+#evidence-view {
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+#evidence-view h2 {
+    font-size: 22px;
+}
+
+#evidence-view p,
+#evidence-view label,
+#evidence-view input,
+#evidence-view select,
+#evidence-view textarea,
+#evidence-view button,
+#evidence-view th,
+#evidence-view td {
+    font-size: 15px;
+}
+
+#evidence-view th {
+    font-size: 13px;
+}
+
+#evidence-view #evidence-form-panel,
+#evidence-view #evidence-details-panel,
+#evidence-view #custody-form-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    z-index: 1002;
+    margin: 0;
+    padding: 28px;
+    border: 1px solid var(--border, #263852);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+/* Keep closed panels hidden, even with modal styling. */
+#evidence-view #evidence-form-panel[hidden],
+#evidence-view #evidence-details-panel[hidden],
+#evidence-view #custody-form-panel[hidden] {
+    display: none !important;
+}
+
+/* Dim the page behind an open popup. */
+body:has(#evidence-view #evidence-form-panel:not([hidden]))::after,
+body:has(#evidence-view #evidence-details-panel:not([hidden]))::after,
+body:has(#evidence-view #custody-form-panel:not([hidden]))::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 8, 20, 0.72);
+    backdrop-filter: blur(3px);
+    z-index: 1001;
+}
+
+#evidence-view .form-grid {
+    gap: 18px;
+}
+
+#evidence-view .form-grid input,
+#evidence-view .form-grid select,
+#evidence-view .form-grid textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+}
+
+#evidence-view #evidence-details-content p {
+    margin: 12px 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    #evidence-view #evidence-form-panel,
+    #evidence-view #evidence-details-panel,
+    #evidence-view #custody-form-panel {
+        padding: 20px;
+    }
+}
+
+
+/* Evidence & Custody — match typography across CrimeVault */
+
+#evidence-view {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#evidence-view h2 {
+    font-size: 19px;
+}
+
+#evidence-view p,
+#evidence-view label,
+#evidence-view input,
+#evidence-view select,
+#evidence-view textarea,
+#evidence-view button,
+#evidence-view th,
+#evidence-view td {
+    font-size: 13px;
+}
+
+#evidence-view th {
+    font-size: 12px;
+}

@@ -478,6 +478,279 @@
 <!-- ============ END CASE-PERSON ASSOCIATIONS MODULE ============ -->
 
 
+<!-- ============ EVIDENCE & CUSTODY MODULE ============ -->
+<section id="evidence-view" class="cases-view" hidden>
+
+    <div class="cases-toolbar">
+        <div>
+            <p class="eyebrow">FORENSIC EVIDENCE MANAGEMENT</p>
+            <h2>Evidence &amp; Custody</h2>
+            <p class="muted-text">
+                Register evidence, track its location, and maintain its chain of custody.
+            </p>
+        </div>
+
+        <button type="button" id="open-evidence-form" class="primary-button">
+            + Register Evidence
+        </button>
+    </div>
+
+    <!-- Search and filters -->
+    <div class="case-filters">
+        <input type="search" id="evidence-search"
+               placeholder="Search evidence, case or description..."
+               aria-label="Search evidence">
+
+        <select id="evidence-status-filter" aria-label="Filter evidence by status">
+            <option value="">All Statuses</option>
+            <option value="Collected">Collected</option>
+            <option value="In Storage">In Storage</option>
+            <option value="Under Examination">Under Examination</option>
+            <option value="Transferred">Transferred</option>
+            <option value="Released">Released</option>
+        </select>
+    </div>
+
+    <!-- Evidence register -->
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Evidence Register</h2>
+                <p id="evidence-count" class="muted-text">0 evidence records</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Evidence ID</th>
+                        <th>Case Number</th>
+                        <th>Evidence Type</th>
+                        <th>Collection Location</th>
+                        <th>Collection Date</th>
+                        <th>Status</th>
+                        <th>Current Location</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="evidence-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-evidence" class="empty-state" hidden>
+            No evidence records match your search.
+        </p>
+    </div>
+
+    <!-- Evidence registration form -->
+    <section id="evidence-form-panel" class="panel case-form-panel"
+             hidden aria-labelledby="evidence-form-heading">
+
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">NEW EVIDENCE RECORD</p>
+                <h2 id="evidence-form-heading">Register Evidence</h2>
+            </div>
+
+            <button type="button" id="close-evidence-form" class="secondary-button">
+                Close
+            </button>
+        </div>
+
+        <form id="evidence-form">
+            <div class="form-grid">
+
+                <label>Evidence ID *
+                    <input type="text" name="evidenceId"
+                           placeholder="e.g. EV-1001" required>
+                </label>
+
+                <label>Case *
+                    <select name="caseNumber" required>
+                        <option value="">Select a case</option>
+                    </select>
+                </label>
+
+                <label>Evidence Type *
+                    <select name="evidenceType" required>
+                        <option value="">Select evidence type</option>
+                        <option value="Digital">Digital</option>
+                        <option value="Document">Document</option>
+                        <option value="Physical">Physical</option>
+                        <option value="Biological">Biological</option>
+                        <option value="Trace">Trace</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </label>
+
+                <label>Collection Location *
+                    <input type="text" name="collectionLocation"
+                           placeholder="Where was it collected?" required>
+                </label>
+
+                <label>Collection Date and Time *
+                    <input type="datetime-local" name="collectionDateTime" required>
+                </label>
+
+                <label>Initial Status *
+                    <select name="status" required>
+                        <option value="Collected">Collected</option>
+                        <option value="In Storage">In Storage</option>
+                        <option value="Under Examination">Under Examination</option>
+                        <option value="Transferred">Transferred</option>
+                        <option value="Released">Released</option>
+                    </select>
+                </label>
+
+                <label>Current Location *
+                    <input type="text" name="currentLocation"
+                           placeholder="Storage room, lab, etc." required>
+                </label>
+
+                <label class="full-width">Description *
+                    <textarea name="description" rows="3"
+                              placeholder="Describe the evidence..."
+                              required></textarea>
+                </label>
+            </div>
+
+            <p class="form-note">
+                Demo mode: records are stored in browser memory only.
+                They will not be saved to Oracle until backend integration.
+            </p>
+
+            <div class="form-actions">
+                <button type="button" id="cancel-evidence-form"
+                        class="secondary-button">Cancel</button>
+
+                <button type="submit" class="primary-button">
+                    Save Evidence
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Evidence details -->
+    <section id="evidence-details-panel" class="panel case-form-panel"
+             hidden aria-labelledby="evidence-details-heading">
+
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">RECORD DETAILS</p>
+                <h2 id="evidence-details-heading">Evidence Details</h2>
+            </div>
+
+            <button type="button" id="close-evidence-details"
+                    class="secondary-button">Close</button>
+        </div>
+
+        <div id="evidence-details-content"></div>
+
+        <div class="form-actions">
+            <button type="button" id="open-custody-form"
+                    class="primary-button">+ Record Custody Transfer</button>
+        </div>
+    </section>
+
+    <!-- Custody transfer form -->
+    <section id="custody-form-panel" class="panel case-form-panel"
+             hidden aria-labelledby="custody-form-heading">
+
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">CHAIN OF CUSTODY</p>
+                <h2 id="custody-form-heading">Record Custody Transfer</h2>
+            </div>
+
+            <button type="button" id="close-custody-form"
+                    class="secondary-button">Close</button>
+        </div>
+
+        <form id="custody-form">
+            <div class="form-grid">
+
+                <label>Evidence ID *
+                    <input type="text" name="evidenceId" readonly required>
+                </label>
+
+                <label>From Investigator *
+                    <select name="fromInvestigatorId" required>
+                        <option value="">Select investigator</option>
+                    </select>
+                </label>
+
+                <label>To Investigator *
+                    <select name="toInvestigatorId" required>
+                        <option value="">Select investigator</option>
+                    </select>
+                </label>
+
+                <label>Transfer Date and Time *
+                    <input type="datetime-local" name="transferDateTime" required>
+                </label>
+
+                <label>Transfer Location *
+                    <input type="text" name="location" required>
+                </label>
+
+                <label>Transfer Reason *
+                    <input type="text" name="transferReason" required>
+                </label>
+
+                <label class="full-width">Remarks
+                    <textarea name="remarks" rows="3"></textarea>
+                </label>
+            </div>
+
+            <p class="form-note">
+                Demo mode: custody transfers are recorded in browser memory only.
+            </p>
+
+            <div class="form-actions">
+                <button type="button" id="cancel-custody-form"
+                        class="secondary-button">Cancel</button>
+
+                <button type="submit" class="primary-button">
+                    Save Transfer
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Custody history -->
+    <div class="panel cases-table-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Chain of Custody History</h2>
+                <p id="custody-count" class="muted-text">0 transfer records</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Evidence ID</th>
+                        <th>From Investigator</th>
+                        <th>To Investigator</th>
+                        <th>Transfer Date</th>
+                        <th>Reason</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody id="custody-table-body"></tbody>
+            </table>
+        </div>
+
+        <p id="empty-custody" class="empty-state" hidden>
+            No custody transfers have been recorded.
+        </p>
+    </div>
+
+</section>
+
+
 <!-- ================= PEOPLE MODULE ================= -->
 
 <section id="people-view" class="cases-view" hidden>
