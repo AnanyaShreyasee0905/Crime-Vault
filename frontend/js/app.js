@@ -6,8 +6,6 @@
 // CRIMEVAULT FRONTEND
 // Demo-only data. No Java API or Oracle connection yet.
 // ============================================================
-
-
 // -------------------- NAVIGATION --------------------
 
 const navigationLinks = document.querySelectorAll(".nav-link");
@@ -178,10 +176,10 @@ const demoCases = [
         description: "Fictional sample case."
     }
 ];
-// Cases received from the backend API.
-// Keep demoCases separate for the other modules.
+// Cases are intended to use the Java backend.
+// Keep demoCases separate for modules not yet API-integrated.
 let apiCases = [];
-let casesSource = "demo"; // "demo" or "api"
+let casesSource = "api";
 let casesLoading = false;
 
 // Normalize cases received from the backend API.
@@ -211,10 +209,22 @@ function normalizeApiCase(record) {
     };
 }
 
+
 async function loadApiCases() {
     if (casesLoading) return;
 
     casesLoading = true;
+
+    // Do not show demo cases as if they came from the database.
+    casesSource = "api";
+
+    if (caseTableBody) {
+        caseTableBody.innerHTML = `
+            <tr>
+                <td colspan="7">Loading cases from the backend...</td>
+            </tr>
+        `;
+    }
 
     try {
         const response = await CrimeVaultAPI.get("/cases");
@@ -224,21 +234,47 @@ async function loadApiCases() {
         }
 
         apiCases = response.map(normalizeApiCase);
-        casesSource = "api";
 
         console.log("CrimeVault: Cases loaded from backend.", apiCases);
 
         renderCases();
+
     } catch (error) {
         console.error("Failed to load cases from backend:", error);
 
-        // Keep the existing demo table working if the API is unavailable.
-        casesSource = "demo";
-        renderCases();
+        // Clear failed or stale API results.
+        apiCases = [];
+
+        if (caseTableBody) {
+            caseTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        Could not load cases from the backend.
+                        Check that the API is running and try again.
+                    </td>
+                </tr>
+            `;
+        }
+
+        if (caseCount) {
+            caseCount.textContent = "0 cases";
+        }
+
+        if (emptyCases) {
+            emptyCases.hidden = true;
+        }
+
+        alert(
+            "Cases could not be loaded from the backend. " +
+            "Demo records will not be displayed. " +
+            "Please check the backend and try again."
+        );
+
     } finally {
         casesLoading = false;
     }
 }
+
 
 
 
@@ -1054,8 +1090,7 @@ function renderCases() {
 
     // Use API records only when API mode is enabled.
     // Other modules continue using demoCases independently.
-    const casesToDisplay =
-        casesSource === "api" ? apiCases : demoCases;
+    const casesToDisplay = apiCases;
 
     const searchTerm = searchInput
         ? searchInput.value.trim().toLowerCase()
@@ -1122,8 +1157,7 @@ if (caseTableBody) {
         const caseNumber = row.dataset.caseNumber;
 
         // Find the record in the active data source.
-        const casesToSearch =
-            casesSource === "api" ? apiCases : demoCases;
+        const casesToSearch = apiCases;
 
         const record = casesToSearch.find(
             item => item.caseNumber === caseNumber
@@ -1212,8 +1246,7 @@ function setupCaseEditButton() {
     }
 
     button.addEventListener("click", () => {
-        const casesToSearch =
-            casesSource === "api" ? apiCases : demoCases;
+        const casesToSearch = apiCases;
 
         const record = casesToSearch.find(
             item => item.caseNumber === selectedCaseNumber
@@ -1286,9 +1319,11 @@ if (cancelCaseFormButton) {
 }
 
 
+
 if (caseForm) {
     caseForm.addEventListener("submit", async event => {
         event.preventDefault();
+
         if (!caseForm.reportValidity()) return;
 
         const data = new FormData(caseForm);
@@ -1305,83 +1340,36 @@ if (caseForm) {
             description: String(data.get("description") || "").trim()
         };
 
-        if (record.dateOpened && record.dateOpened < record.dateReported) {
+        if (
+            record.dateOpened &&
+            record.dateReported &&
+            record.dateOpened < record.dateReported
+        ) {
             alert("Date opened cannot be earlier than date reported.");
             return;
         }
 
-        // API-backed case workflow
-        if (casesSource === "api") {
-            const editingApiCase = editingCaseNumber !== null
-                ? apiCases.find(
-                    item => item.caseNumber === editingCaseNumber
-                )
-                : null;
-
-            const duplicate = apiCases.some(item =>
-                item.caseNumber.toLowerCase() === record.caseNumber.toLowerCase()
-                && item.caseNumber !== editingCaseNumber
-            );
-
-            if (duplicate) {
-                alert("That case number already exists.");
-                return;
-            }
-
-            if (editingCaseNumber !== null && !editingApiCase) {
-                alert("The case to edit could not be found in the backend records.");
-                return;
-            }
-
-            try {
-                if (editingApiCase) {
-                    await CrimeVaultAPI.put(
-                        `/cases/${encodeURIComponent(editingApiCase.caseId)}`,
-                        record
-                    );
-                } else {
-                    await CrimeVaultAPI.post("/cases", record);
-                }
-
-                await loadApiCases();
-
-                closeCaseForm();
-
-                if (searchInput) searchInput.value = "";
-                if (statusFilter) statusFilter.value = "";
-                if (priorityFilter) priorityFilter.value = "";
-
-                renderCases();
-
-                const savedCase = apiCases.find(
-                    item => item.caseNumber === record.caseNumber
-                );
-
-                if (savedCase) {
-                    selectedCaseNumber = savedCase.caseNumber;
-                    openCaseDetails(savedCase);
-                }
-
-                alert(
-                    editingApiCase
-                        ? "Case updated successfully on the backend."
-                        : "Case created successfully on the backend."
-                );
-            } catch (error) {
-                console.error("Failed to save API case:", error);
-                alert(
-                    "Could not save the case to the backend. " +
-                    "Check the browser console and confirm the API is running."
-                );
-            }
-
+        // Cases must always use the Java REST API.
+        if (casesLoading) {
+            alert("Please wait while cases are loading.");
             return;
         }
 
-        // Existing demo workflow — preserve other modules' demo data.
-        const duplicate = demoCases.some(item =>
-            item.caseNumber.toLowerCase() === record.caseNumber.toLowerCase()
-            && item.caseNumber !== editingCaseNumber
+        const editingApiCase = editingCaseNumber !== null
+            ? apiCases.find(
+                item => item.caseNumber === editingCaseNumber
+            )
+            : null;
+
+        if (editingCaseNumber !== null && !editingApiCase) {
+            alert("The selected case was not found in the backend records.");
+            return;
+        }
+
+        const duplicate = apiCases.some(item =>
+            String(item.caseNumber).toLowerCase() ===
+                record.caseNumber.toLowerCase() &&
+            item.caseNumber !== editingCaseNumber
         );
 
         if (duplicate) {
@@ -1389,18 +1377,27 @@ if (caseForm) {
             return;
         }
 
-        if (editingCaseNumber !== null) {
-            const index = demoCases.findIndex(
-                item => item.caseNumber === editingCaseNumber
-            );
+        try {
+            if (editingApiCase) {
+                if (editingApiCase.caseId == null) {
+                    alert(
+                        "The backend case ID is missing. " +
+                        "Cannot safely update this case."
+                    );
+                    return;
+                }
 
-            if (index < 0) {
-                alert("Case not found.");
-                return;
+                await CrimeVaultAPI.put(
+                    `/cases/${encodeURIComponent(editingApiCase.caseId)}`,
+                    record
+                );
+            } else {
+                await CrimeVaultAPI.post("/cases", record);
             }
 
-            demoCases[index] = record;
-            selectedCaseNumber = record.caseNumber;
+            // Reload the authoritative case list.
+            await loadApiCases();
+
             closeCaseForm();
 
             if (searchInput) searchInput.value = "";
@@ -1408,31 +1405,32 @@ if (caseForm) {
             if (priorityFilter) priorityFilter.value = "";
 
             renderCases();
-            renderAssignments();
-            renderPeople();
-            renderCasePeople();
-            openCaseDetails(record);
 
-            alert("Demo case updated. Not saved to the database.");
-        } else {
-            demoCases.unshift(record);
-            closeCaseForm();
+            const savedCase = apiCases.find(
+                item => item.caseNumber === record.caseNumber
+            );
 
-            if (searchInput) searchInput.value = "";
-            if (statusFilter) statusFilter.value = "";
-            if (priorityFilter) priorityFilter.value = "";
+            if (savedCase) {
+                selectedCaseNumber = savedCase.caseNumber;
+                openCaseDetails(savedCase);
+            }
 
-            renderCases();
-            populateAssignmentOptions();
-            populateCasePersonOptions();
-            renderAssignments();
-            renderPeople();
-            renderCasePeople();
+            alert(
+                editingApiCase
+                    ? "Case update request completed."
+                    : "Case creation request completed."
+            );
+        } catch (error) {
+            console.error("Failed to save case through the API:", error);
 
-            alert("Demo case added. Not saved to the database.");
+            alert(
+                "Could not save the case through the backend. " +
+                (error.message || "Check the API connection and try again.")
+            );
         }
     });
 }
+
 
 
 /* ============================================================
@@ -2616,24 +2614,32 @@ if (casePersonTableBody) {
 }
 
 
-// ============================================================
-// INITIALIZATION
-// ============================================================
 
 
+/* ============================================================
+   INITIALIZATION
+   ============================================================ */
+
+// Keep existing demo-backed modules operational while their
+// backend endpoints and contracts are being confirmed.
 populateInvestigatorFilters();
 populateAssignmentOptions();
 populateCasePersonOptions();
 
-// Render existing demo data immediately.
-renderCases();
 renderInvestigators();
 renderAssignments();
 renderPeople();
 renderCasePeople();
 
-// Then load cases from the Java backend.
+// Cases must load through the Java REST API.
+// Never initialize the Cases table using demoCases.
+if (caseTableBody) {
+    caseTableBody.innerHTML = `
+        <tr>
+            <td colspan="7">Loading cases from the backend...</td>
+        </tr>
+    `;
+}
+
 loadApiCases();
-
-
 activateView("dashboard");
