@@ -7,7 +7,9 @@
     <title>CrimeVault | Investigation Management</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="js/api.js" defer></script>
+    <script src="js/case-status-filter.js" defer></script>
     <script src="js/app.js" defer></script>
+    <script src="js/workflows.js" defer></script>
 </head>
 <body>
     <div class="app-shell">
@@ -56,7 +58,7 @@
                     <h1 id="page-title">Dashboard</h1>
                 </div>
                 <div class="topbar-right">
-                    <span class="demo-badge">DEMO DATA</span>
+                    <span class="demo-badge" id="dashboard-source">Backend status</span>
                     <div class="avatar">CV</div>
                 </div>
             </header>
@@ -73,23 +75,23 @@
             <section class="stats-grid">
                 <article class="stat-card">
                     <div class="stat-top"><span>Total Cases</span><span class="stat-icon">▣</span></div>
-                    <h2 id="total-cases">24</h2>
-                    <p>Demo records</p>
+                    <h2 id="total-cases">Loading</h2>
+                    <p>Loading backend records</p>
                 </article>
                 <article class="stat-card">
                     <div class="stat-top"><span>Investigators</span><span class="stat-icon">♙</span></div>
-                    <h2 id="total-investigators">12</h2>
-                    <p>Demo records</p>
+                    <h2 id="total-investigators">Loading</h2>
+                    <p>Loading backend records</p>
                 </article>
                 <article class="stat-card">
                     <div class="stat-top"><span>Evidence Items</span><span class="stat-icon">◈</span></div>
-                    <h2 id="total-evidence">38</h2>
-                    <p>Demo records</p>
+                    <h2 id="total-evidence">Loading</h2>
+                    <p>Loading backend records</p>
                 </article>
                 <article class="stat-card">
                     <div class="stat-top"><span>Interviews</span><span class="stat-icon">☷</span></div>
-                    <h2 id="total-interviews">16</h2>
-                    <p>Demo records</p>
+                    <h2 id="total-interviews">Loading</h2>
+                    <p>Loading backend records</p>
                 </article>
             </section>
 
@@ -114,29 +116,7 @@
                                     <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="recent-cases">
-                                <tr>
-                                    <td>CV-1001</td>
-                                    <td>Demo investigation Alpha</td>
-                                    <td>Theft</td>
-                                    <td><span class="priority high">High</span></td>
-                                    <td><span class="status open">Open</span></td>
-                                </tr>
-                                <tr>
-                                    <td>CV-1002</td>
-                                    <td>Demo investigation Bravo</td>
-                                    <td>Fraud</td>
-                                    <td><span class="priority medium">Medium</span></td>
-                                    <td><span class="status progress">In Progress</span></td>
-                                </tr>
-                                <tr>
-                                    <td>CV-1003</td>
-                                    <td>Demo investigation Charlie</td>
-                                    <td>Burglary</td>
-                                    <td><span class="priority low">Low</span></td>
-                                    <td><span class="status closed">Closed</span></td>
-                                </tr>
-                            </tbody>
+                            <tbody id="recent-cases"></tbody>
                         </table>
                     </div>
                 </article>
@@ -149,23 +129,18 @@
                         </div>
                     </div>
                     <div class="activity-list" id="recent-activity">
-                        <div class="activity-item">
-                            <span class="activity-marker"></span>
-                            <div><strong>Evidence registered</strong><p>Demo event · CV-1001</p><small>Today · Demo</small></div>
-                        </div>
-                        <div class="activity-item">
-                            <span class="activity-marker"></span>
-                            <div><strong>Investigator assigned</strong><p>Demo event · CV-1002</p><small>Yesterday · Demo</small></div>
-                        </div>
-                        <div class="activity-item">
-                            <span class="activity-marker"></span>
-                            <div><strong>Interview recorded</strong><p>Demo event · CV-1001</p><small>Earlier · Demo</small></div>
-                        </div>
+                        <p class="empty-state">Loading persisted investigation events…</p>
                     </div>
                 </article>
             </section>
 
-            <footer class="page-footer">
+            <section id="forensics-view" class="cases-view" hidden>
+                <div id="forensics-root"></div>
+            </section>
+
+            <section id="timeline-view" class="cases-view" hidden>
+                <div id="timeline-root"></div>
+            </section>
 
 <!-- ================= CASE ASSIGNMENTS MODULE ================= -->
 
@@ -338,11 +313,17 @@
                     >
                 </label>
 
+                <label>Assignment Status *
+                    <select name="assignmentStatus" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </label>
+
             </div>
 
             <p class="form-note">
-                Demo mode: assignments are stored in browser memory only.
-                No database changes are made.
+                Assignment records are saved through the backend. Select records loaded from the database.
             </p>
 
             <div class="form-actions">
@@ -413,7 +394,6 @@
                         <th>Person ID</th>
                         <th>Person Name</th>
                         <th>Relationship</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="case-person-table-body"></tbody>
@@ -451,8 +431,8 @@
                     </select>
                 </label>
 
-                <label>Relationship to Case *
-                    <select name="relationship" required>
+                <label>Role in This Case *
+                    <select name="role" required>
                         <option value="">Select relationship</option>
                         <option value="Witness">Witness</option>
                         <option value="Victim">Victim</option>
@@ -463,8 +443,7 @@
             </div>
 
             <p class="form-note">
-                Demo mode: this links existing records in browser memory.
-                It does not create or delete database records.
+                The relationship is saved through the backend using the selected database record IDs. Unlinking is unavailable because the API does not provide a delete operation.
             </p>
 
             <div class="form-actions">
@@ -518,6 +497,7 @@
             <div>
                 <h2>Evidence Register</h2>
                 <p id="evidence-count" class="muted-text">0 evidence records</p>
+                <p id="evidence-feedback" class="form-note" role="status"></p>
             </div>
         </div>
 
@@ -562,13 +542,13 @@
         <form id="evidence-form">
             <div class="form-grid">
 
-                <label>Evidence ID *
-                    <input type="text" name="evidenceId"
-                           placeholder="e.g. EV-1001" required>
+                <label>Evidence ID
+                    <input type="text" name="evidenceId" readonly
+                           placeholder="Assigned by database">
                 </label>
 
                 <label>Case *
-                    <select name="caseNumber" required>
+                    <select name="caseId" required>
                         <option value="">Select a case</option>
                     </select>
                 </label>
@@ -616,10 +596,7 @@
                 </label>
             </div>
 
-            <p class="form-note">
-                Demo mode: records are stored in browser memory only.
-                They will not be saved to Oracle until backend integration.
-            </p>
+            <p class="form-note" id="evidence-message" role="status"></p>
 
             <div class="form-actions">
                 <button type="button" id="cancel-evidence-form"
@@ -705,8 +682,9 @@
             </div>
 
             <p class="form-note">
-                Demo mode: custody transfers are recorded in browser memory only.
+                Custody records are append-only. Saving records a transfer and updates the evidence location through the backend transaction.
             </p>
+            <p class="form-note" id="custody-message" role="status"></p>
 
             <div class="form-actions">
                 <button type="button" id="cancel-custody-form"
@@ -725,7 +703,11 @@
             <div>
                 <h2>Chain of Custody History</h2>
                 <p id="custody-count" class="muted-text">0 transfer records</p>
+                <p id="custody-feedback" class="form-note" role="status"></p>
             </div>
+            <select id="custody-evidence-filter" aria-label="Filter custody by evidence">
+                <option value="">All evidence</option>
+            </select>
         </div>
 
         <div class="table-wrapper">
@@ -738,6 +720,7 @@
                         <th>Transfer Date</th>
                         <th>Reason</th>
                         <th>Location</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="custody-table-body"></tbody>
@@ -748,6 +731,14 @@
             No custody transfers have been recorded.
         </p>
     </div>
+
+    <section id="custody-details-panel" class="panel case-form-panel" hidden>
+        <div class="panel-heading">
+            <h2>Custody Record Details</h2>
+            <button type="button" id="close-custody-details" class="secondary-button">Close</button>
+        </div>
+        <div id="custody-details-content"></div>
+    </section>
 
 </section>
 
@@ -783,13 +774,6 @@
             aria-label="Search people"
         >
 
-        <select id="person-role-filter" aria-label="Filter by role">
-            <option value="">All Roles</option>
-            <option value="Witness">Witness</option>
-            <option value="Suspect">Suspect</option>
-            <option value="Victim">Victim</option>
-            <option value="Other">Other</option>
-        </select>
     </div>
 
     <!-- People table -->
@@ -807,9 +791,9 @@
                     <tr>
                         <th>Person ID</th>
                         <th>Name</th>
-                        <th>Role</th>
+                        <th>Date of Birth</th>
                         <th>Contact</th>
-                        <th>Email</th>
+                        <th>Gender</th>
                         <th>Associated Case(s)</th>
                     </tr>
                 </thead>
@@ -848,12 +832,11 @@
             <div class="form-grid">
 
                 <label>
-                    Person ID *
+                    Person ID (assigned by database)
                     <input
-                        type="text"
                         name="personId"
-                        placeholder="e.g. PER-1001"
-                        required
+                        readonly
+                        placeholder="Assigned after saving"
                     >
                 </label>
 
@@ -868,14 +851,8 @@
                 </label>
 
                 <label>
-                    Role *
-                    <select name="role" required>
-                        <option value="">Select role</option>
-                        <option value="Witness">Witness</option>
-                        <option value="Suspect">Suspect</option>
-                        <option value="Victim">Victim</option>
-                        <option value="Other">Other</option>
-                    </select>
+                    Date of Birth
+                    <input type="date" name="dateOfBirth">
                 </label>
 
                 <label>
@@ -888,18 +865,18 @@
                 </label>
 
                 <label>
-                    Email
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Enter email address"
-                    >
+                    Gender
+                    <input name="gender" placeholder="Enter gender">
+                </label>
+
+                <label class="full-width">Address
+                    <textarea name="address" rows="2" placeholder="Enter address"></textarea>
                 </label>
 
             </div>
 
             <p class="form-note">
-                Demo mode: person records are held in browser memory only.
+                Person details are saved through the backend. Case-specific roles are recorded in Case–Person Associations.
             </p>
 
             <div class="form-actions">
@@ -956,19 +933,12 @@
             </div>
 
             <div>
-                <span class="detail-label">Role</span>
-                <p id="detail-person-role">—</p>
+                <span class="detail-label">Date of Birth</span>
+                <p id="detail-person-dob">—</p>
             </div>
 
-            <div>
-                <span class="detail-label">Contact</span>
-                <p id="detail-person-contact">—</p>
-            </div>
-
-            <div>
-                <span class="detail-label">Email</span>
-                <p id="detail-person-email">—</p>
-            </div>
+            <div><span class="detail-label">Gender</span><p id="detail-person-gender">—</p></div>
+            <div class="full-width"><span class="detail-label">Address</span><p id="detail-person-address">—</p></div>
 
             <div>
                 <span class="detail-label">Associated Case(s)</span>
@@ -1140,12 +1110,11 @@
             <div class="form-grid">
 
                 <label>
-                    Investigator ID *
+                    Investigator ID (assigned by database)
                     <input
                         name="investigatorId"
-                        required
-                        maxlength="30"
-                        placeholder="INV-1001"
+                        readonly
+                        placeholder="Assigned after saving"
                     >
                 </label>
 
@@ -1214,8 +1183,7 @@
             </div>
 
             <p class="form-note">
-                Demo mode: investigator records remain in browser memory
-                and are not saved to Oracle or a server.
+                Investigator records are saved through the backend. IDs are generated by the database.
             </p>
 
             <div class="form-actions">
@@ -1307,7 +1275,7 @@
     </div>
 
     
-<!-- Case details panel: demo mode for now, API-ready structure -->
+<!-- Case details panel populated from the backend API. -->
 <section
     id="case-details-panel"
     class="panel case-details-panel"
@@ -1454,8 +1422,7 @@
             </div>
 
             <p class="form-note">
-                Demo mode: this record stays in browser memory and is not
-                saved to Oracle or the server.
+                Cases are saved through the backend. If backend data cannot be loaded, the form will not create a demo record.
             </p>
 
             <div class="form-actions">
@@ -1468,9 +1435,9 @@
         </form>
     </section>
 </section>
-</escape>
+            <footer class="page-footer">
                 <span>CrimeVault · Crime Investigation, Evidence & Case Management</span>
-                <span>Prototype · Sample records only</span>
+                <span>Backend records when connected</span>
             </footer>
         </main>
     </div>

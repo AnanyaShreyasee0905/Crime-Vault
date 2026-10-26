@@ -417,6 +417,26 @@ tbody tr:last-child td {
     color: var(--muted);
 }
 
+.module-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 18px 0;
+}
+
+.module-tabs [aria-selected="true"] {
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.form-note[data-kind="error"] {
+    color: #fca5a5;
+}
+
+.form-note[data-kind="success"] {
+    color: #86efac;
+}
+
 @media (max-width: 1150px) {
     .sidebar {
         width: 215px;

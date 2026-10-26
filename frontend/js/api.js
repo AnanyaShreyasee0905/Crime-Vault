@@ -44,7 +44,16 @@ const CrimeVaultAPI = (() => {
 
         if (response.status !== 204) {
             if (contentType.includes("application/json")) {
-                data = await response.json();
+                const body = await response.text();
+                if (body.trim()) {
+                    try {
+                        data = JSON.parse(body);
+                    } catch {
+                        const error = new Error("The backend returned malformed JSON.");
+                        error.status = response.status;
+                        throw error;
+                    }
+                }
             } else {
                 const text = await response.text();
                 data = text ? { message: text } : null;
@@ -86,9 +95,7 @@ const CrimeVaultAPI = (() => {
         },
 
         delete(endpoint) {
-            return request(endpoint, {
-                method: "DELETE"
-            });
-        }
+            return request(endpoint, { method: "DELETE" });
+        },
     });
 })();
