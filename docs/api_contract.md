@@ -1,3 +1,5 @@
+> Historical draft: this proposal predates the current 11-relation implementation. Use the README route summary and controller mappings under `backend/src/main/java/com/crimevault/controller` for current route support; route presence alone does not prove persistence.
+
 # CrimeVault API Contract
 
 **Project:** CrimeVault — Crime Case & Evidence Management System  

@@ -1,3 +1,5 @@
+> Historical checklist: these unchecked items record the earlier baseline, not current test results. See the README for current API support and test commands.
+
 # CrimeVault API Test Checklist
 
 ## A. Health endpoint

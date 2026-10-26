@@ -4,7 +4,8 @@
 
 // ============================================================
 // CRIMEVAULT FRONTEND
-// Demo-only data. No Java API or Oracle connection yet.
+// Existing modules use the Spring API where implemented; new relation
+// workflows are integrated by workflows.js.
 // ============================================================
 
 
@@ -103,7 +104,6 @@ const peopleTableBody = document.getElementById("people-table-body");
 const personCount = document.getElementById("person-count");
 const emptyPeople = document.getElementById("empty-people");
 const personSearch = document.getElementById("person-search");
-const personRoleFilter = document.getElementById("person-role-filter");
 const personForm = document.getElementById("person-form");
 const personFormPanel = document.getElementById("person-form-panel");
 const personDetailsPanel = document.getElementById("person-details-panel");
@@ -143,46 +143,38 @@ const cancelCustodyFormButton = document.getElementById("cancel-custody-form");
 // DEMO CASE DATA
 // ============================================================
 
-const demoCases = [
-    {
-        caseNumber: "CV-1001",
-        title: "Demo investigation Alpha",
-        caseType: "Theft",
-        priority: "High",
-        status: "Open",
-        location: "Demo location A",
-        dateReported: "2026-10-01",
-        dateOpened: "2026-10-01",
-        description: "Fictional sample case."
-    },
-    {
-        caseNumber: "CV-1002",
-        title: "Demo investigation Bravo",
-        caseType: "Fraud",
-        priority: "Medium",
-        status: "In Progress",
-        location: "Demo location B",
-        dateReported: "2026-10-02",
-        dateOpened: "2026-10-02",
-        description: "Fictional sample case."
-    },
-    {
-        caseNumber: "CV-1003",
-        title: "Demo investigation Charlie",
-        caseType: "Burglary",
-        priority: "Low",
-        status: "Closed",
-        location: "Demo location C",
-        dateReported: "2026-10-03",
-        dateOpened: "2026-10-03",
-        description: "Fictional sample case."
-    }
-];
 // Cases received from the backend API.
-// Keep demoCases separate for the other modules.
 let apiCases = [];
-let casesSource = "demo"; // "demo" or "api"
+let casesSource = "loading"; // "loading", "api", or "error"
 let casesLoading = false;
+let apiPeople = [];
+let apiInvestigators = [];
+let apiAssignments = [];
+let apiCasePeople = [];
+const moduleLoadState = {
+    people: "loading",
+    investigators: "loading",
+    assignments: "loading",
+    casePeople: "loading"
+};
+const moduleSaving = {
+    people: false,
+    investigators: false,
+    assignments: false,
+    casePeople: false
+};
+
+function apiModuleMessage(moduleName) {
+    const state = moduleLoadState[moduleName];
+    if (state === "loading") return "Loading records from the backend…";
+    if (state === "error") return "Records could not be loaded from the backend. No database records are shown. Check the backend connection and reload.";
+    return "No records match your search or filters.";
+}
+
+function apiId(value) {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
 
 // Normalize cases received from the backend API.
 function normalizeApiCase(record) {
@@ -202,7 +194,7 @@ function normalizeApiCase(record) {
         description: record.description || "",
         caseType: displayValue(record.caseType),
         priority: displayValue(record.priority),
-        status: displayValue(record.status),
+        status: record.status ?? "",
         location: record.location || "",
         dateReported: record.dateReported || "",
         dateOpened: record.dateOpened || "",
@@ -226,15 +218,28 @@ async function loadApiCases() {
         apiCases = response.map(normalizeApiCase);
         casesSource = "api";
 
-        console.log("CrimeVault: Cases loaded from backend.", apiCases);
+        console.info("CrimeVault: Cases loaded from backend.", apiCases.length, "records.");
 
         renderCases();
+        populateAssignmentOptions();
+        populateCasePersonOptions();
+        renderAssignments();
+        renderCasePeople();
+        renderInvestigators();
+        renderPeople();
+        updateDashboardFromApi();
     } catch (error) {
         console.error("Failed to load cases from backend:", error);
 
-        // Keep the existing demo table working if the API is unavailable.
-        casesSource = "demo";
+        casesSource = "error";
         renderCases();
+        populateAssignmentOptions();
+        populateCasePersonOptions();
+        renderAssignments();
+        renderCasePeople();
+        renderInvestigators();
+        renderPeople();
+        updateDashboardFromApi();
     } finally {
         casesLoading = false;
     }
@@ -246,140 +251,17 @@ async function loadApiCases() {
 // DEMO INVESTIGATOR DATA
 // ============================================================
 
-const demoInvestigators = [
-    {
-        investigatorId: "INV-1001",
-        name: "Demo Investigator Alpha",
-        badgeNumber: "BADGE-1001",
-        department: "Major Crimes",
-        rank: "Inspector",
-        contact: "0000000001",
-        email: "alpha.demo@example.com"
-    },
-    {
-        investigatorId: "INV-1002",
-        name: "Demo Investigator Bravo",
-        badgeNumber: "BADGE-1002",
-        department: "Cybercrime",
-        rank: "Sub-Inspector",
-        contact: "9494949494",
-        email: "bravo.demo@example.com"
-    },
-    {
-        investigatorId: "INV-1003",
-        name: "Demo Investigator Charlie",
-        badgeNumber: "BADGE-1003",
-        department: "Forensics",
-        rank: "Inspector",
-        contact: "0000000003",
-        email: "charlie.demo@example.com"
-    },
-    {
-        investigatorId: "INV-1004",
-        name: "Demo Investigator Bravo",
-        badgeNumber: "BADGE-1007",
-        department: "Cybercrime",
-        rank: "Sub-Inspector",
-        contact: "88788787",
-        email: "bravo.demo@example.com"
-    }
-];
 
 
 // ============================================================
 // DEMO ASSIGNMENTS
 // ============================================================
 
-const demoCaseAssignments = [
-    {
-        assignmentId: "ASN-1001",
-        caseNumber: "CV-1001",
-        investigatorId: "INV-1001",
-        assignmentDate: "2026-10-01",
-        assignmentRole: "Lead Investigator",
-        assignmentStatus: "Active",
-        inactiveDate: ""
-    },
-    {
-        assignmentId: "ASN-1002",
-        caseNumber: "CV-1002",
-        investigatorId: "INV-1002",
-        assignmentDate: "2026-10-02",
-        assignmentRole: "Supporting Investigator",
-        assignmentStatus: "Active",
-        inactiveDate: ""
-    }
-];
 
 
 // ============================================================
 // DEMO PEOPLE DATA
 // ============================================================
-
-const demoPeople = [
-    {
-        personId: "PER-1001",
-        name: "Demo Witness Alpha",
-        role: "Witness",
-        contact: "9000000001",
-        email: "witness.demo@example.com"
-    },
-    {
-        personId: "PER-1002",
-        name: "Demo Person Bravo",
-        role: "Victim",
-        contact: "9000000002",
-        email: "victim.demo@example.com"
-    },
-    {
-        personId: "PER-1003",
-        name: "Demo Person Charlie",
-        role: "Suspect",
-        contact: "9000000003",
-        email: "suspect.demo@example.com"
-    }
-];
-
-
-/* =========================================================
-   EVIDENCE & CUSTODY DEMO DATA
-   Demo-only records for frontend testing
-   ========================================================= */
-
-const demoEvidence = [
-    {
-        evidenceId: "EV-1001",
-        caseNumber: "CV-1001",
-        evidenceType: "Mobile Phone",
-        collectionLocation: "Scene A",
-        collectionDateTime: "2026-10-08T10:30",
-        status: "Collected",
-        currentLocation: "Evidence Room A",
-        description: "Mobile phone recovered during the investigation."
-    },
-    {
-        evidenceId: "EV-1002",
-        caseNumber: "CV-1002",
-        evidenceType: "Document",
-        collectionLocation: "Office 204",
-        collectionDateTime: "2026-10-09T14:15",
-        status: "In Storage",
-        currentLocation: "Evidence Locker B",
-        description: "Documents collected for examination."
-    },
-    {
-        evidenceId: "EV-1003",
-        caseNumber: "CV-1003",
-        evidenceType: "Fingerprint Sample",
-        collectionLocation: "Entry Door",
-        collectionDateTime: "2026-10-10T09:00",
-        status: "Under Examination",
-        currentLocation: "Forensic Lab",
-        description: "Fingerprint sample awaiting forensic examination."
-    }
-];
-
-const demoCustodyRecords = [];
 
 
 
@@ -388,23 +270,6 @@ const demoCustodyRecords = [];
 // Kept separate from person records, like a relationship table.
 // ============================================================
 
-const demoCasePeople = [
-    {
-        caseNumber: "CV-1001",
-        personId: "PER-1001",
-        relationship: "Witness"
-    },
-    {
-        caseNumber: "CV-1001",
-        personId: "PER-1002",
-        relationship: "Victim"
-    },
-    {
-        caseNumber: "CV-1002",
-        personId: "PER-1003",
-        relationship: "Suspect"
-    }
-];
 
 
 // ============================================================
@@ -412,6 +277,7 @@ const demoCasePeople = [
 // ============================================================
 
 let editingCaseNumber = null;
+let editingAssignmentId = null;
 let selectedCaseNumber = null;
 let editingInvestigatorId = null;
 let selectedInvestigatorId = null;
@@ -436,497 +302,44 @@ function setFieldValue(form, fieldName, value) {
     if (field) field.value = value ?? "";
 }
 
-function getCaseByNumber(caseNumber) {
-    return demoCases.find(item => item.caseNumber === caseNumber);
-}
-
-function getEvidenceById(evidenceId) {
-    return demoEvidence.find(
-        item => item.evidenceId === evidenceId
-    );
-}
-
-
-/* =========================================================
-   EVIDENCE REGISTER — RENDER DEMO DATA
-   ========================================================= */
-
-function populateEvidenceOptions() {
-    if (!evidenceForm) return;
-
-    const caseSelect = evidenceForm.elements.namedItem("caseNumber");
-    if (!caseSelect) return;
-
-    const previousValue = caseSelect.value;
-
-    caseSelect.innerHTML = `
-        <option value="">Select a case</option>
-        ${demoCases.map(item => `
-            <option value="${escapeHTML(item.caseNumber)}">
-                ${escapeHTML(item.caseNumber)} — ${escapeHTML(item.title)}
-            </option>
-        `).join("")}
-    `;
-
-    if (demoCases.some(item => item.caseNumber === previousValue)) {
-        caseSelect.value = previousValue;
-    }
-}
-
-    function renderEvidence() {
-        if (!evidenceTableBody) return;
-
-        const searchTerm = evidenceSearch
-            ? evidenceSearch.value.trim().toLowerCase()
-            : "";
-
-        const selectedStatus = evidenceStatusFilter
-            ? evidenceStatusFilter.value
-            : "";
-
-        const filteredEvidence = demoEvidence.filter(item => {
-            const searchableText = [
-                item.evidenceId,
-                item.caseNumber,
-                item.evidenceType,
-                item.collectionLocation,
-                item.currentLocation,
-                item.description,
-                item.status
-            ].join(" ").toLowerCase();
-
-            return searchableText.includes(searchTerm) &&
-                (!selectedStatus || item.status === selectedStatus);
-        });
-
-        evidenceTableBody.innerHTML = filteredEvidence.map(item => `
-            <tr>
-                <td>${escapeHTML(item.evidenceId)}</td>
-                <td>${escapeHTML(item.caseNumber)}</td>
-                <td>${escapeHTML(item.evidenceType)}</td>
-                <td>${escapeHTML(item.collectionLocation || "—")}</td>
-                <td>${escapeHTML(item.collectionDateTime || "—")}</td>
-                <td>${escapeHTML(item.status || "—")}</td>
-                <td>${escapeHTML(item.currentLocation || "—")}</td>
-                <td>
-                    <button
-                        type="button"
-                        class="secondary-button"
-                        data-view-evidence="${escapeHTML(item.evidenceId)}">
-                        View
-                    </button>
-                </td>
-            </tr>
-        `).join("");
-
-        if (evidenceCount) {
-            evidenceCount.textContent = String(filteredEvidence.length);
-        }
-
-        if (emptyEvidence) {
-            emptyEvidence.hidden = filteredEvidence.length > 0;
-        }
-    }
-
-
-function renderCustodyHistory(evidenceId = "") {
-    if (!custodyTableBody) return;
-
-    const records = demoCustodyRecords
-        .filter(record => !evidenceId || record.evidenceId === evidenceId)
-        .slice()
-        .sort((a, b) =>
-            new Date(b.transferDateTime) - new Date(a.transferDateTime)
-        );
-
-    custodyTableBody.innerHTML = records.map(record => {
-        const fromInvestigator = demoInvestigators.find(
-            item => item.investigatorId === record.fromInvestigatorId
-        );
-
-        const toInvestigator = demoInvestigators.find(
-            item => item.investigatorId === record.toInvestigatorId
-        );
-
-        return `
-            <tr>
-                <td>${escapeHTML(record.evidenceId)}</td>
-                <td>${escapeHTML(fromInvestigator?.name || record.fromInvestigatorId || "—")}</td>
-                <td>${escapeHTML(toInvestigator?.name || record.toInvestigatorId || "—")}</td>
-                <td>${escapeHTML(record.transferDateTime || "—")}</td>
-                <td>${escapeHTML(record.transferReason || "—")}</td>
-                <td>${escapeHTML(record.location || "—")}</td>
-            </tr>
-        `;
-    }).join("");
-
-
-    
-if (openCustodyFormButton) {
-    openCustodyFormButton.addEventListener("click", () => {
-        const item = getEvidenceById(selectedEvidenceId);
-
-        if (!item) {
-            alert("Please open an evidence record using View first.");
-            return;
-        }
-
-        if (!custodyForm || !custodyFormPanel) {
-            alert("Custody form or popup panel was not found.");
-            return;
-        }
-
-        custodyForm.reset();
-
-        setFieldValue(custodyForm, "evidenceId", item.evidenceId);
-        setFieldValue(custodyForm, "location", item.currentLocation || "");
-
-        const dateField =
-            custodyForm.elements.namedItem("transferDateTime");
-
-        if (dateField) {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            dateField.value = now.toISOString().slice(0, 16);
-        }
-
-        if (typeof populateCustodyInvestigatorOptions === "function") {
-            populateCustodyInvestigatorOptions();
-        }
-
-        if (evidenceDetailsPanel) {
-            evidenceDetailsPanel.hidden = true;
-        }
-
-        custodyFormPanel.hidden = false;
-        custodyFormPanel.style.display = "block";
-    });
-}
-
-
-    if (custodyCount) {
-        custodyCount.textContent = String(records.length);
-    }
-
-    if (emptyCustody) {
-        emptyCustody.hidden = records.length > 0;
-    }
-}
-
-
-/* =========================================================
-   CUSTODY TRANSFER — BUTTONS AND SAVE HANDLER
-   Add this block only once.
-   ========================================================= */
-
-// Close button
-if (closeCustodyFormButton) {
-    closeCustodyFormButton.addEventListener("click", () => {
-        custodyFormPanel.hidden = true;
-        custodyFormPanel.style.display = "none";
-    });
-}
-
-// Cancel button
-if (cancelCustodyFormButton) {
-    cancelCustodyFormButton.addEventListener("click", () => {
-        custodyFormPanel.hidden = true;
-        custodyFormPanel.style.display = "none";
-
-        if (custodyForm) {
-            custodyForm.reset();
-        }
-    });
-}
-
-// Save transfer
-if (custodyForm) {
-    custodyForm.addEventListener("submit", event => {
-        event.preventDefault();
-
-        const readValue = name =>
-            custodyForm.elements.namedItem(name)?.value.trim() || "";
-
-        const evidenceId = readValue("evidenceId");
-        const fromInvestigatorId = readValue("fromInvestigatorId");
-        const toInvestigatorId = readValue("toInvestigatorId");
-        const transferDateTime = readValue("transferDateTime");
-        const location = readValue("location");
-        const transferReason = readValue("transferReason");
-        const remarks = readValue("remarks");
-
-        const evidence = getEvidenceById(evidenceId);
-
-        if (!evidence) {
-            alert("Evidence record not found.");
-            return;
-        }
-
-        if (
-            !fromInvestigatorId ||
-            !toInvestigatorId ||
-            !transferDateTime ||
-            !location ||
-            !transferReason
-        ) {
-            alert("Please complete all required fields.");
-            return;
-        }
-
-        if (fromInvestigatorId === toInvestigatorId) {
-            alert("Select two different investigators.");
-            return;
-        }
-
-        const validInvestigator = id =>
-            demoInvestigators.some(
-                investigator => investigator.investigatorId === id
-            );
-
-        if (
-            !validInvestigator(fromInvestigatorId) ||
-            !validInvestigator(toInvestigatorId)
-        ) {
-            alert("Please select valid investigators.");
-            return;
-        }
-
-        if (Number.isNaN(Date.parse(transferDateTime))) {
-            alert("Please enter a valid transfer date and time.");
-            return;
-        }
-
-        demoCustodyRecords.push({
-            transferId: `CTR-${Date.now()}`,
-            evidenceId,
-            fromInvestigatorId,
-            toInvestigatorId,
-            transferDateTime,
-            location,
-            transferReason,
-            remarks
-        });
-
-        evidence.currentLocation = location;
-
-        custodyFormPanel.hidden = true;
-        custodyFormPanel.style.display = "none";
-        custodyForm.reset();
-
-        renderEvidence();
-        renderCustodyHistory();
-
-        alert("Custody transfer recorded successfully.");
-    });
-}
-
-
-
-/* Handle clicks on Evidence Register View buttons */
-if (evidenceTableBody) {
-    evidenceTableBody.addEventListener("click", (event) => {
-        const viewButton = event.target.closest("[data-view-evidence]");
-        if (!viewButton) return;
-
-        const evidenceId = viewButton.dataset.viewEvidence;
-        const item = getEvidenceById(evidenceId);
-
-        if (!item) {
-            alert("Evidence record not found.");
-            return;
-        }
-
-        selectedEvidenceId = item.evidenceId;
-
-        if (evidenceDetailsContent) {
-            evidenceDetailsContent.innerHTML = `
-                <p><strong>Evidence ID:</strong> ${escapeHTML(item.evidenceId)}</p>
-                <p><strong>Case Number:</strong> ${escapeHTML(item.caseNumber)}</p>
-                <p><strong>Evidence Type:</strong> ${escapeHTML(item.evidenceType)}</p>
-                <p><strong>Collection Location:</strong> ${escapeHTML(item.collectionLocation || "—")}</p>
-                <p><strong>Collection Date:</strong> ${escapeHTML(item.collectionDateTime || "—")}</p>
-                <p><strong>Status:</strong> ${escapeHTML(item.status || "—")}</p>
-                <p><strong>Current Location:</strong> ${escapeHTML(item.currentLocation || "—")}</p>
-                <p><strong>Description:</strong> ${escapeHTML(item.description || "—")}</p>
-            `;
-        }
-
-        if (evidenceDetailsPanel) {
-    evidenceDetailsPanel.hidden = false;
-    evidenceDetailsPanel.style.display = "block";
-}
-
-
-/* Close the Evidence Details popup */
-const evidenceCloseButton =
-    document.getElementById("close-evidence-details");
-
-if (evidenceCloseButton) {
-    evidenceCloseButton.addEventListener("click", () => {
-        if (evidenceDetailsPanel) {
-            evidenceDetailsPanel.hidden = true;
-            evidenceDetailsPanel.style.display = "none";
-        }
-    });
-}
-
-
-/* Save newly registered evidence */
-if (evidenceForm) {
-    evidenceForm.addEventListener("submit", event => {
-        event.preventDefault();
-
-        const readValue = name =>
-            evidenceForm.elements.namedItem(name)?.value.trim() || "";
-
-        const evidenceId = readValue("evidenceId");
-        const caseNumber = readValue("caseNumber");
-        const evidenceType = readValue("evidenceType");
-        const collectionLocation = readValue("collectionLocation");
-        const collectionDateTime = readValue("collectionDateTime");
-        const status = readValue("status");
-        const currentLocation = readValue("currentLocation");
-        const description = readValue("description");
-
-        if (
-            !evidenceId || !caseNumber || !evidenceType ||
-            !collectionLocation || !collectionDateTime ||
-            !status || !currentLocation
-        ) {
-            alert("Please complete all required fields.");
-            return;
-        }
-
-        if (!demoCases.some(item => item.caseNumber === caseNumber)) {
-            alert("Please select a valid case.");
-            return;
-        }
-
-        if (demoEvidence.some(
-            item => item.evidenceId.toLowerCase() === evidenceId.toLowerCase()
-        )) {
-            alert("That Evidence ID already exists.");
-            return;
-        }
-
-        if (Number.isNaN(Date.parse(collectionDateTime))) {
-            alert("Enter a valid collection date and time.");
-            return;
-        }
-
-        demoEvidence.push({
-            evidenceId,
-            caseNumber,
-            evidenceType,
-            collectionLocation,
-            collectionDateTime,
-            status,
-            currentLocation,
-            description
-        });
-
-        evidenceForm.reset();
-
-        if (evidenceFormPanel) {
-            evidenceFormPanel.hidden = true;
-            evidenceFormPanel.style.display = "none";
-        }
-
-        if (evidenceSearch) evidenceSearch.value = "";
-        if (evidenceStatusFilter) evidenceStatusFilter.value = "";
-
-        renderEvidence();
-        alert("Evidence registered successfully!");
-    });
-}
-
-
-    });
-}
-
-
-    if (evidenceSearch) {
-        evidenceSearch.addEventListener("input", renderEvidence);
-    }
-
-if (evidenceStatusFilter) {
-    evidenceStatusFilter.addEventListener("change", renderEvidence);
-}
-
-
-/* =========================================================
-   EVIDENCE REGISTER — OPEN AND CLOSE FORM
-   ========================================================= */
-
-function openEvidenceForm() {
-    if (!evidenceForm || !evidenceFormPanel) return;
-
-    evidenceForm.reset();
-    populateEvidenceOptions();
-
-    const idInput = evidenceForm.elements.namedItem("evidenceId");
-    if (idInput) idInput.readOnly = false;
-
-    editingEvidenceId = null;
-    evidenceFormPanel.hidden = false;
-    evidenceFormPanel.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
-}
-
-function closeEvidenceForm() {
-    if (evidenceFormPanel) {
-        evidenceFormPanel.hidden = true;
-    }
-
-    if (evidenceForm) evidenceForm.reset();
-
-    editingEvidenceId = null;
-}
-
-if (openEvidenceFormButton) {
-    openEvidenceFormButton.addEventListener("click", openEvidenceForm);
-}
-
-if (closeEvidenceFormButton) {
-    closeEvidenceFormButton.addEventListener("click", closeEvidenceForm);
-}
-
-if (cancelEvidenceFormButton) {
-    cancelEvidenceFormButton.addEventListener("click", closeEvidenceForm);
-}
 
 
 function getInvestigatorById(investigatorId) {
-    return demoInvestigators.find(
-        item => item.investigatorId === investigatorId
+    return apiInvestigators.find(
+        item => String(item.investigatorId) === String(investigatorId)
     );
 }
 
 function getPersonById(personId) {
-    return demoPeople.find(item => item.personId === personId);
+    return apiPeople.find(item => String(item.personId) === String(personId));
 }
 
 function getActiveAssignments(investigatorId) {
-    return demoCaseAssignments.filter(assignment =>
-        assignment.investigatorId === investigatorId
-        && assignment.assignmentStatus === "Active"
+    if (moduleLoadState.assignments !== "api") return [];
+    return apiAssignments.filter(assignment =>
+        String(assignment.investigatorId) === String(investigatorId)
+        && assignment.assignmentStatus?.toLowerCase() === "active"
     );
 }
 
 function getAssignedCaseText(investigatorId) {
+    if (moduleLoadState.assignments === "error") return "Assignments unavailable";
+    if (moduleLoadState.assignments === "loading") return "Assignments loading";
     const assignments = getActiveAssignments(investigatorId);
 
     if (assignments.length === 0) return "Unassigned";
 
-    return assignments.map(item => item.caseNumber).join(", ");
+    return assignments.map(item =>
+        apiCases.find(record => Number(record.caseId) === Number(item.caseId))?.caseNumber
+            || `Case ${item.caseId}`
+    ).join(", ");
 }
 
 function getPersonCaseNumbers(personId) {
-    return demoCasePeople
-        .filter(item => item.personId === personId)
-        .map(item => item.caseNumber);
+    return apiCasePeople
+        .filter(item => Number(item.personId) === Number(personId))
+        .map(item => apiCases.find(record => Number(record.caseId) === Number(item.caseId))?.caseNumber
+            || `Case ${item.caseId}`);
 }
 
 function getPersonCaseText(personId) {
@@ -940,7 +353,7 @@ function getInvestigatorDisplayName(investigatorId) {
 }
 
 function getAssignmentStatusClass(status) {
-    return status === "Active" ? "open" : "closed";
+    return status?.toLowerCase() === "active" ? "open" : "closed";
 }
 
 
@@ -972,6 +385,10 @@ function activateView(viewName) {
     const showPeople = viewName === "people";
     const showCasePeople = viewName === "case-people";
     const showEvidence = viewName === "evidence";
+    const showForensics = viewName === "forensics";
+    const showTimeline = viewName === "timeline";
+    const forensicsView = document.getElementById("forensics-view");
+    const timelineView = document.getElementById("timeline-view");
 
     dashboardSections.forEach(section => {
         if (section) {
@@ -981,7 +398,9 @@ function activateView(viewName) {
                 showAssignments ||
                 showPeople ||
                 showCasePeople ||
-                showEvidence
+                showEvidence ||
+                showForensics ||
+                showTimeline
             );
         }
     });
@@ -992,6 +411,8 @@ function activateView(viewName) {
     if (peopleView) peopleView.hidden = !showPeople;
     if (casePeopleView) casePeopleView.hidden = !showCasePeople;
     if (evidenceView) evidenceView.hidden = !showEvidence;
+    if (forensicsView) forensicsView.hidden = !showForensics;
+    if (timelineView) timelineView.hidden = !showTimeline;
 
     if (showCases) {
         renderCases();
@@ -1021,6 +442,8 @@ function activateView(viewName) {
         renderEvidence();
         renderCustodyHistory();
     }
+
+    document.dispatchEvent(new CustomEvent("crimevault:view", { detail: viewName }));
 }
 
 
@@ -1053,18 +476,22 @@ function renderCases() {
     if (!caseTableBody) return;
 
     // Use API records only when API mode is enabled.
-    // Other modules continue using demoCases independently.
-    const casesToDisplay =
-        casesSource === "api" ? apiCases : demoCases;
+    const casesToDisplay = casesSource === "api" ? apiCases : [];
 
     const searchTerm = searchInput
         ? searchInput.value.trim().toLowerCase()
         : "";
 
-    const selectedStatus = statusFilter ? statusFilter.value : "";
+    const selectedStatus = statusFilter
+        ? CrimeVaultCaseStatusFilter.populate(statusFilter, casesToDisplay, Option)
+        : "";
     const selectedPriority = priorityFilter ? priorityFilter.value : "";
 
-    const filteredCases = casesToDisplay.filter(item => {
+    const statusFilteredCases = CrimeVaultCaseStatusFilter.filterByStatus(
+        casesToDisplay,
+        selectedStatus
+    );
+    const filteredCases = statusFilteredCases.filter(item => {
         const searchableText = [
             item.caseNumber,
             item.title,
@@ -1073,7 +500,6 @@ function renderCases() {
         ].join(" ").toLowerCase();
 
         return searchableText.includes(searchTerm)
-            && (!selectedStatus || item.status === selectedStatus)
             && (!selectedPriority || item.priority === selectedPriority);
     });
 
@@ -1109,6 +535,11 @@ function renderCases() {
     }
 
     if (emptyCases) {
+        emptyCases.textContent = casesSource === "error"
+            ? "Cases could not be loaded from the backend. No database records are shown. Check the backend connection and reload."
+            : casesSource === "loading"
+                ? "Loading cases from the backend…"
+                : "No cases match your search or filters.";
         emptyCases.hidden = filteredCases.length !== 0;
     }
 }
@@ -1122,12 +553,7 @@ if (caseTableBody) {
         const caseNumber = row.dataset.caseNumber;
 
         // Find the record in the active data source.
-        const casesToSearch =
-            casesSource === "api" ? apiCases : demoCases;
-
-        const record = casesToSearch.find(
-            item => item.caseNumber === caseNumber
-        );
+        const record = apiCases.find(item => item.caseNumber === caseNumber);
 
         if (record) {
             openCaseDetails(record);
@@ -1212,12 +638,7 @@ function setupCaseEditButton() {
     }
 
     button.addEventListener("click", () => {
-        const casesToSearch =
-            casesSource === "api" ? apiCases : demoCases;
-
-        const record = casesToSearch.find(
-            item => item.caseNumber === selectedCaseNumber
-        );
+        const record = apiCases.find(item => item.caseNumber === selectedCaseNumber);
 
         if (record) {
             openCaseForm(record);
@@ -1310,6 +731,11 @@ if (caseForm) {
             return;
         }
 
+        if (casesSource !== "api") {
+            alert("Cases are unavailable because the backend data could not be loaded. This record was not saved.");
+            return;
+        }
+
         // API-backed case workflow
         if (casesSource === "api") {
             const editingApiCase = editingCaseNumber !== null
@@ -1378,59 +804,6 @@ if (caseForm) {
             return;
         }
 
-        // Existing demo workflow — preserve other modules' demo data.
-        const duplicate = demoCases.some(item =>
-            item.caseNumber.toLowerCase() === record.caseNumber.toLowerCase()
-            && item.caseNumber !== editingCaseNumber
-        );
-
-        if (duplicate) {
-            alert("That case number already exists.");
-            return;
-        }
-
-        if (editingCaseNumber !== null) {
-            const index = demoCases.findIndex(
-                item => item.caseNumber === editingCaseNumber
-            );
-
-            if (index < 0) {
-                alert("Case not found.");
-                return;
-            }
-
-            demoCases[index] = record;
-            selectedCaseNumber = record.caseNumber;
-            closeCaseForm();
-
-            if (searchInput) searchInput.value = "";
-            if (statusFilter) statusFilter.value = "";
-            if (priorityFilter) priorityFilter.value = "";
-
-            renderCases();
-            renderAssignments();
-            renderPeople();
-            renderCasePeople();
-            openCaseDetails(record);
-
-            alert("Demo case updated. Not saved to the database.");
-        } else {
-            demoCases.unshift(record);
-            closeCaseForm();
-
-            if (searchInput) searchInput.value = "";
-            if (statusFilter) statusFilter.value = "";
-            if (priorityFilter) priorityFilter.value = "";
-
-            renderCases();
-            populateAssignmentOptions();
-            populateCasePersonOptions();
-            renderAssignments();
-            renderPeople();
-            renderCasePeople();
-
-            alert("Demo case added. Not saved to the database.");
-        }
     });
 }
 
@@ -1443,7 +816,7 @@ function populateInvestigatorFilters() {
     if (investigatorDepartmentFilter) {
         const current = investigatorDepartmentFilter.value;
         const departments = [
-            ...new Set(demoInvestigators.map(item => item.department))
+            ...new Set(apiInvestigators.map(item => item.department).filter(Boolean))
         ].sort();
 
         investigatorDepartmentFilter.innerHTML =
@@ -1460,7 +833,7 @@ function populateInvestigatorFilters() {
     if (investigatorRankFilter) {
         const current = investigatorRankFilter.value;
         const ranks = [
-            ...new Set(demoInvestigators.map(item => item.rank))
+            ...new Set(apiInvestigators.map(item => item.rank).filter(Boolean))
         ].sort();
 
         investigatorRankFilter.innerHTML =
@@ -1490,7 +863,7 @@ function renderInvestigators() {
         ? investigatorRankFilter.value
         : "";
 
-    const filtered = demoInvestigators.filter(item => {
+    const filtered = apiInvestigators.filter(item => {
         const searchable = [
             item.investigatorId,
             item.name,
@@ -1525,10 +898,13 @@ function renderInvestigators() {
 
     if (investigatorCount) {
         investigatorCount.textContent =
-            `${filtered.length} of ${demoInvestigators.length} investigators`;
+        `${filtered.length} of ${apiInvestigators.length} investigators`;
     }
 
-    if (emptyInvestigators) emptyInvestigators.hidden = filtered.length !== 0;
+    if (emptyInvestigators) {
+        emptyInvestigators.textContent = apiModuleMessage("investigators");
+        emptyInvestigators.hidden = filtered.length !== 0;
+    }
 }
 
 if (investigatorSearch) {
@@ -1722,58 +1098,20 @@ if (investigatorForm) {
             email: String(data.get("email") || "").trim()
         };
 
-        if (demoInvestigators.some(item =>
-            item.investigatorId.toLowerCase() === record.investigatorId.toLowerCase()
-            && item.investigatorId !== editingInvestigatorId
-        )) {
-            alert("That Investigator ID already exists.");
-            return;
-        }
-
-        if (demoInvestigators.some(item =>
-            item.badgeNumber.toLowerCase() === record.badgeNumber.toLowerCase()
-            && item.investigatorId !== editingInvestigatorId
-        )) {
-            alert("That Badge Number is already registered.");
-            return;
-        }
-
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
             alert("Please enter a valid email address.");
             return;
         }
 
-        if (editingInvestigatorId !== null) {
-            const index = demoInvestigators.findIndex(
-                item => item.investigatorId === editingInvestigatorId
-            );
-
-            if (index < 0) {
-                alert("Investigator not found.");
-                return;
-            }
-
-            demoInvestigators[index] = record;
-            selectedInvestigatorId = record.investigatorId;
-            closeInvestigatorForm();
-
-            if (investigatorSearch) investigatorSearch.value = "";
-
-            renderInvestigators();
-            openInvestigatorDetails(record);
-
-            alert("Demo investigator updated. Not saved to the database.");
-        } else {
-            demoInvestigators.unshift(record);
-            closeInvestigatorForm();
-
-            if (investigatorSearch) investigatorSearch.value = "";
-
-            populateAssignmentOptions();
-            renderInvestigators();
-
-            alert("Demo investigator registered. Not saved to the database.");
-        }
+        const payload = {
+            name: record.name,
+            badgeNumber: record.badgeNumber,
+            department: record.department,
+            rank: record.rank,
+            contact: record.contact,
+            email: record.email
+        };
+        void saveInvestigator(payload, editingInvestigatorId);
     });
 }
 
@@ -1794,13 +1132,13 @@ function populateAssignmentOptions() {
 
         caseSelect.innerHTML =
             '<option value="">Select a case</option>'
-            + demoCases.map(item => `
-                <option value="${escapeHTML(item.caseNumber)}">
+            + apiCases.map(item => `
+                <option value="${escapeHTML(item.caseId)}">
                     ${escapeHTML(item.caseNumber)} — ${escapeHTML(item.title)}
                 </option>
             `).join("");
 
-        if (demoCases.some(item => item.caseNumber === previousValue)) {
+        if (apiCases.some(item => String(item.caseId) === previousValue)) {
             caseSelect.value = previousValue;
         }
     }
@@ -1810,14 +1148,14 @@ function populateAssignmentOptions() {
 
         investigatorSelect.innerHTML =
             '<option value="">Select an investigator</option>'
-            + demoInvestigators.map(item => `
+            + apiInvestigators.map(item => `
                 <option value="${escapeHTML(item.investigatorId)}">
                     ${escapeHTML(item.investigatorId)} — ${escapeHTML(item.name)}
                 </option>
             `).join("");
 
-        if (demoInvestigators.some(item =>
-            item.investigatorId === previousValue
+        if (apiInvestigators.some(item =>
+            String(item.investigatorId) === previousValue
         )) {
             investigatorSelect.value = previousValue;
         }
@@ -1836,17 +1174,31 @@ function renderAssignments() {
         ? assignmentSearch.value.trim().toLowerCase()
         : "";
 
-    const selectedStatus = assignmentStatusFilter
+    let selectedStatus = assignmentStatusFilter
         ? assignmentStatusFilter.value
         : "";
 
-    const filtered = demoCaseAssignments.filter(assignment => {
-        const caseRecord = getCaseByNumber(assignment.caseNumber);
+    if (assignmentStatusFilter) {
+        const statuses = [...new Set(apiAssignments
+            .map(assignment => assignment.assignmentStatus)
+            .filter(status => status != null && String(status).trim()))];
+        assignmentStatusFilter.replaceChildren(
+            new Option("All Assignment Statuses", ""),
+            ...statuses.map(status => new Option(String(status), String(status)))
+        );
+        assignmentStatusFilter.value = statuses.some(status =>
+            String(status) === selectedStatus
+        ) ? selectedStatus : "";
+        selectedStatus = assignmentStatusFilter.value;
+    }
+
+    const filtered = apiAssignments.filter(assignment => {
+        const caseRecord = apiCases.find(item => Number(item.caseId) === Number(assignment.caseId));
         const investigator = getInvestigatorById(assignment.investigatorId);
 
         const searchable = [
             assignment.assignmentId,
-            assignment.caseNumber,
+            caseRecord?.caseNumber || assignment.caseId,
             caseRecord?.title || "",
             investigator?.name || "",
             investigator?.badgeNumber || "",
@@ -1856,23 +1208,22 @@ function renderAssignments() {
         ].join(" ").toLowerCase();
 
         return searchable.includes(query)
-            && (!selectedStatus || assignment.assignmentStatus === selectedStatus);
+            && (!selectedStatus || assignment.assignmentStatus?.toLowerCase() === selectedStatus.toLowerCase());
     });
 
     assignmentTableBody.innerHTML = filtered.map(assignment => {
-        const caseRecord = getCaseByNumber(assignment.caseNumber);
+        const caseRecord = apiCases.find(item => Number(item.caseId) === Number(assignment.caseId));
         const investigator = getInvestigatorById(assignment.investigatorId);
 
-        const action = assignment.assignmentStatus === "Active"
-            ? `<button type="button" class="secondary-button"
-                 data-deactivate-assignment="${escapeHTML(assignment.assignmentId)}">
-                 Deactivate
-               </button>`
-            : `<span class="muted-text">Inactive</span>`;
+        const action = `<button type="button" class="secondary-button"
+                 data-edit-assignment="${escapeHTML(assignment.assignmentId)}">Edit</button>
+                 ${assignment.assignmentStatus?.toLowerCase() === "active"
+                    ? `<button type="button" class="secondary-button" data-deactivate-assignment="${escapeHTML(assignment.assignmentId)}">Deactivate</button>`
+                    : `<span class="muted-text">${escapeHTML(assignment.assignmentStatus || "—")}</span>`}`;
 
         return `
             <tr>
-                <td>${escapeHTML(assignment.caseNumber)}</td>
+                <td>${escapeHTML(caseRecord?.caseNumber || `Case ${assignment.caseId}`)}</td>
                 <td>${escapeHTML(caseRecord?.title || "Case unavailable")}</td>
                 <td>${escapeHTML(investigator?.name || "Investigator unavailable")}</td>
                 <td>${escapeHTML(investigator?.badgeNumber || "—")}</td>
@@ -1890,15 +1241,18 @@ function renderAssignments() {
 
     if (assignmentCount) {
         assignmentCount.textContent =
-            `${filtered.length} of ${demoCaseAssignments.length} assignments`;
+            `${filtered.length} of ${apiAssignments.length} assignments`;
     }
 
-    if (emptyAssignments) emptyAssignments.hidden = filtered.length !== 0;
+    if (emptyAssignments) {
+        emptyAssignments.textContent = apiModuleMessage("assignments");
+        emptyAssignments.hidden = filtered.length !== 0;
+    }
 
     if (assignmentHistoryBody) {
-        assignmentHistoryBody.innerHTML = demoCaseAssignments.map(assignment => `
+        assignmentHistoryBody.innerHTML = apiAssignments.map(assignment => `
             <tr>
-                <td>${escapeHTML(assignment.caseNumber)}</td>
+                <td>${escapeHTML(apiCases.find(item => Number(item.caseId) === Number(assignment.caseId))?.caseNumber || `Case ${assignment.caseId}`)}</td>
                 <td>${escapeHTML(getInvestigatorDisplayName(assignment.investigatorId))}</td>
                 <td>${escapeHTML(assignment.assignmentRole)}</td>
                 <td>${escapeHTML(assignment.assignmentDate)}</td>
@@ -1912,22 +1266,47 @@ function renderAssignments() {
     }
 
     if (emptyAssignmentHistory) {
-        emptyAssignmentHistory.hidden = demoCaseAssignments.length !== 0;
+        emptyAssignmentHistory.textContent = apiModuleMessage("assignments");
+        emptyAssignmentHistory.hidden = apiAssignments.length !== 0;
     }
 }
 
 
 // -------------------- ASSIGNMENT FORM --------------------
 
-function openAssignmentForm() {
+function openAssignmentForm(record = null) {
     if (!assignmentForm || !assignmentFormPanel) return;
 
     assignmentForm.reset();
     populateAssignmentOptions();
+    editingAssignmentId = record ? record.assignmentId : null;
+
+    const statusSelect = assignmentForm.elements.namedItem("assignmentStatus");
+    statusSelect?.querySelector('option[data-existing-status="true"]')?.remove();
+    if (record?.assignmentStatus && statusSelect && ![...statusSelect.options].some(option => option.value === String(record.assignmentStatus))) {
+        const existingStatus = new Option(String(record.assignmentStatus), String(record.assignmentStatus));
+        existingStatus.dataset.existingStatus = "true";
+        statusSelect.add(existingStatus);
+    }
+
+    const heading = document.getElementById("assignment-form-heading");
+    const submit = assignmentForm.querySelector('[type="submit"]');
+    if (record) {
+        setFieldValue(assignmentForm, "caseNumber", record.caseId);
+        setFieldValue(assignmentForm, "investigatorId", record.investigatorId);
+        setFieldValue(assignmentForm, "assignmentRole", record.assignmentRole);
+        setFieldValue(assignmentForm, "assignmentDate", record.assignmentDate);
+        setFieldValue(assignmentForm, "assignmentStatus", record.assignmentStatus);
+        if (heading) heading.textContent = "Edit Assignment";
+        if (submit) submit.textContent = "Save Changes";
+    } else {
+        if (heading) heading.textContent = "Assign Investigator";
+        if (submit) submit.textContent = "Save Assignment";
+    }
 
     const dateField = assignmentForm.elements.namedItem("assignmentDate");
 
-    if (dateField) {
+    if (dateField && !record) {
         dateField.value = new Date().toISOString().slice(0, 10);
     }
 
@@ -1939,6 +1318,11 @@ function closeAssignmentForm() {
 
     assignmentFormPanel.hidden = true;
     assignmentForm.reset();
+    editingAssignmentId = null;
+    const heading = document.getElementById("assignment-form-heading");
+    const submit = assignmentForm.querySelector('[type="submit"]');
+    if (heading) heading.textContent = "Assign Investigator";
+    if (submit) submit.textContent = "Save Assignment";
 }
 
 const openAssignmentFormButton =
@@ -1962,28 +1346,35 @@ if (assignmentForm) {
     assignmentForm.addEventListener("submit", event => {
         event.preventDefault();
         if (!assignmentForm.reportValidity()) return;
+        if (["assignments", "investigators"].some(name => moduleLoadState[name] !== "api")
+            || casesSource !== "api") {
+            alert("Assignments, investigators, and cases must load successfully before saving an assignment.");
+            return;
+        }
 
         const data = new FormData(assignmentForm);
 
-        const caseNumber = String(data.get("caseNumber") || "").trim();
-        const investigatorId = String(data.get("investigatorId") || "").trim();
+        const caseId = apiId(data.get("caseNumber"));
+        const investigatorId = apiId(data.get("investigatorId"));
         const assignmentRole = String(data.get("assignmentRole") || "").trim();
         const assignmentDate = String(data.get("assignmentDate") || "").trim();
+        const assignmentStatus = String(data.get("assignmentStatus") || "Active").trim();
 
-        if (!getCaseByNumber(caseNumber)) {
+        if (!caseId || !apiCases.some(item => Number(item.caseId) === caseId)) {
             alert("Please select a valid case.");
             return;
         }
 
-        if (!getInvestigatorById(investigatorId)) {
+        if (!investigatorId || !getInvestigatorById(investigatorId)) {
             alert("Please select a valid investigator.");
             return;
         }
 
-        const duplicateActive = demoCaseAssignments.some(assignment =>
-            assignment.caseNumber === caseNumber
-            && assignment.investigatorId === investigatorId
-            && assignment.assignmentStatus === "Active"
+        const duplicateActive = assignmentStatus.toLowerCase() === "active" && apiAssignments.some(assignment =>
+            Number(assignment.caseId) === caseId
+            && Number(assignment.investigatorId) === investigatorId
+            && String(assignment.assignmentId) !== String(editingAssignmentId)
+            && assignment.assignmentStatus?.toLowerCase() === "active"
         );
 
         if (duplicateActive) {
@@ -1991,26 +1382,14 @@ if (assignmentForm) {
             return;
         }
 
-        const newAssignment = {
-            assignmentId: `ASN-${Date.now()}`,
-            caseNumber,
+        const assignment = {
+            caseId,
             investigatorId,
             assignmentDate,
             assignmentRole,
-            assignmentStatus: "Active",
-            inactiveDate: ""
+            assignmentStatus
         };
-
-        demoCaseAssignments.push(newAssignment);
-        closeAssignmentForm();
-
-        if (assignmentSearch) assignmentSearch.value = "";
-        if (assignmentStatusFilter) assignmentStatusFilter.value = "";
-
-        renderAssignments();
-        renderInvestigators();
-
-        alert("Assignment added in demo mode. Not saved to the database.");
+        void saveAssignment(assignment, editingAssignmentId);
     });
 }
 
@@ -2022,25 +1401,32 @@ if (assignmentTableBody) {
 
         if (!button) return;
 
-        const assignment = demoCaseAssignments.find(
-            item => item.assignmentId === button.dataset.deactivateAssignment
+        const assignment = apiAssignments.find(
+            item => String(item.assignmentId) === button.dataset.deactivateAssignment
         );
 
-        if (!assignment || assignment.assignmentStatus !== "Active") return;
+        if (!assignment || assignment.assignmentStatus?.toLowerCase() !== "active") return;
 
         if (!confirm(
-            `Deactivate assignment for ${assignment.caseNumber}? Its history will be retained.`
+            `Deactivate assignment for case ${assignment.caseId}? Its history will be retained.`
         )) {
             return;
         }
 
-        assignment.assignmentStatus = "Inactive";
-        assignment.inactiveDate = new Date().toISOString().slice(0, 10);
+        void saveAssignment({
+            caseId: assignment.caseId,
+            investigatorId: assignment.investigatorId,
+            assignmentDate: assignment.assignmentDate,
+            assignmentRole: assignment.assignmentRole,
+            assignmentStatus: "Inactive"
+        }, assignment.assignmentId);
+    });
 
-        renderAssignments();
-        renderInvestigators();
-
-        alert("Assignment deactivated. History retained in demo memory.");
+    assignmentTableBody.addEventListener("click", event => {
+        const button = event.target.closest("button[data-edit-assignment]");
+        if (!button) return;
+        const assignment = apiAssignments.find(item => String(item.assignmentId) === button.dataset.editAssignment);
+        if (assignment) openAssignmentForm(assignment);
     });
 }
 
@@ -2062,22 +1448,18 @@ function renderPeople() {
         ? personSearch.value.trim().toLowerCase()
         : "";
 
-    const selectedRole = personRoleFilter
-        ? personRoleFilter.value
-        : "";
-
-    const filtered = demoPeople.filter(person => {
+    const filtered = apiPeople.filter(person => {
         const searchable = [
             person.personId,
             person.name,
-            person.role,
+            person.dateOfBirth,
+            person.gender,
             person.contact,
-            person.email,
+            person.address,
             getPersonCaseText(person.personId)
         ].join(" ").toLowerCase();
 
-        return searchable.includes(query)
-            && (!selectedRole || person.role === selectedRole);
+        return searchable.includes(query);
     });
 
     peopleTableBody.innerHTML = filtered.map(person => `
@@ -2087,28 +1469,26 @@ function renderPeople() {
             aria-label="View person ${escapeHTML(person.name)}">
             <td>${escapeHTML(person.personId)}</td>
             <td>${escapeHTML(person.name)}</td>
-            <td>${escapeHTML(person.role)}</td>
+            <td>${escapeHTML(person.dateOfBirth || "Not provided")}</td>
             <td>${escapeHTML(person.contact || "Not provided")}</td>
-            <td>${escapeHTML(person.email || "Not provided")}</td>
+            <td>${escapeHTML(person.gender || "Not provided")}</td>
             <td>${escapeHTML(getPersonCaseText(person.personId))}</td>
         </tr>
     `).join("");
 
     if (personCount) {
         personCount.textContent =
-            `${filtered.length} of ${demoPeople.length} people`;
+            `${filtered.length} of ${apiPeople.length} people`;
     }
 
     if (emptyPeople) {
+        emptyPeople.textContent = apiModuleMessage("people");
         emptyPeople.hidden = filtered.length !== 0;
     }
 }
 
 if (personSearch) {
     personSearch.addEventListener("input", renderPeople);
-}
-if (personRoleFilter) {
-    personRoleFilter.addEventListener("change", renderPeople);
 }
 
 if (peopleTableBody) {
@@ -2144,9 +1524,10 @@ function openPersonDetails(person) {
     const details = {
         "detail-person-id": person.personId,
         "detail-person-name": person.name,
-        "detail-person-role": person.role,
+        "detail-person-dob": person.dateOfBirth || "Not provided",
         "detail-person-contact": person.contact || "Not provided",
-        "detail-person-email": person.email || "Not provided",
+        "detail-person-gender": person.gender || "Not provided",
+        "detail-person-address": person.address || "Not provided",
         "detail-person-cases": getPersonCaseText(person.personId)
     };
 
@@ -2264,74 +1645,19 @@ if (personForm) {
         const data = new FormData(personForm);
 
         const record = {
-            personId: String(data.get("personId") || "").trim(),
             name: String(data.get("name") || "").trim(),
-            role: String(data.get("role") || "").trim(),
+            dateOfBirth: String(data.get("dateOfBirth") || "").trim() || null,
+            gender: String(data.get("gender") || "").trim(),
             contact: String(data.get("contact") || "").trim(),
-            email: String(data.get("email") || "").trim()
+            address: String(data.get("address") || "").trim()
         };
-
-        const duplicate = demoPeople.some(item =>
-            item.personId.toLowerCase() === record.personId.toLowerCase()
-            && item.personId !== editingPersonId
-        );
-
-        if (duplicate) {
-            alert("That Person ID already exists.");
-            return;
-        }
-
-        if (
-            record.email &&
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)
-        ) {
-            alert("Please enter a valid email address.");
-            return;
-        }
-
-        if (editingPersonId !== null) {
-            const index = demoPeople.findIndex(
-                item => item.personId === editingPersonId
-            );
-
-            if (index < 0) {
-                alert("Person not found.");
-                return;
-            }
-
-            demoPeople[index] = record;
-            selectedPersonId = record.personId;
-
-            closePersonForm();
-
-            if (personSearch) personSearch.value = "";
-            if (personRoleFilter) personRoleFilter.value = "";
-
-            renderPeople();
-            renderCasePeople();
-            openPersonDetails(record);
-
-            alert("Demo person updated. Not saved to the database.");
-        } else {
-            demoPeople.unshift(record);
-
-            closePersonForm();
-
-            if (personSearch) personSearch.value = "";
-            if (personRoleFilter) personRoleFilter.value = "";
-
-            populateCasePersonOptions();
-            renderPeople();
-            renderCasePeople();
-
-            alert("Demo person registered. Not saved to the database.");
-        }
+        void savePerson(record, editingPersonId);
     });
 }
 
 
 // ============================================================
-// CASE-PERSON ASSOCIATIONS — DEMO MODULE
+// CASE-PERSON ASSOCIATIONS — API-BACKED MODULE
 // ============================================================
 
 const casePersonForm = document.getElementById("case-person-form");
@@ -2353,13 +1679,13 @@ function populateCasePersonOptions() {
 
         caseSelect.innerHTML =
             '<option value="">Select a case</option>'
-            + demoCases.map(item => `
-                <option value="${escapeHTML(item.caseNumber)}">
+            + apiCases.map(item => `
+                <option value="${escapeHTML(item.caseId)}">
                     ${escapeHTML(item.caseNumber)} — ${escapeHTML(item.title)}
                 </option>
             `).join("");
 
-        if (demoCases.some(item => item.caseNumber === previousValue)) {
+        if (apiCases.some(item => String(item.caseId) === previousValue)) {
             caseSelect.value = previousValue;
         }
     }
@@ -2369,45 +1695,18 @@ function populateCasePersonOptions() {
 
         personSelect.innerHTML =
             '<option value="">Select a person</option>'
-            + demoPeople.map(item => `
+            + apiPeople.map(item => `
                 <option value="${escapeHTML(item.personId)}">
                     ${escapeHTML(item.personId)} — ${escapeHTML(item.name)}
                 </option>
             `).join("");
 
-        if (demoPeople.some(item => item.personId === previousValue)) {
+        if (apiPeople.some(item => String(item.personId) === previousValue)) {
             personSelect.value = previousValue;
         }
     }
 }
 
-
-
-function populateCustodyInvestigatorOptions() {
-    const fromSelect = custodyForm?.elements.namedItem("fromInvestigatorId");
-    const toSelect = custodyForm?.elements.namedItem("toInvestigatorId");
-
-    [fromSelect, toSelect].forEach((select) => {
-        if (!select) return;
-
-        const previousValue = select.value;
-
-        select.innerHTML = `
-            <option value="">Select investigator</option>
-            ${demoInvestigators.map((investigator) => `
-                <option value="${escapeHTML(investigator.investigatorId)}">
-                    ${escapeHTML(investigator.investigatorId)} — ${escapeHTML(investigator.name)}
-                </option>
-            `).join("")}
-        `;
-
-        if (demoInvestigators.some(
-            investigator => investigator.investigatorId === previousValue
-        )) {
-            select.value = previousValue;
-        }
-    });
-}
 
 
 function renderCasePeople() {
@@ -2421,54 +1720,44 @@ function renderCasePeople() {
         ? casePersonRoleFilter.value
         : "";
 
-    const filtered = demoCasePeople.filter(link => {
-        const caseRecord = getCaseByNumber(link.caseNumber);
+    const filtered = apiCasePeople.filter(link => {
+        const caseRecord = apiCases.find(item => Number(item.caseId) === Number(link.caseId));
         const person = getPersonById(link.personId);
 
         const searchable = [
-            link.caseNumber,
+            caseRecord?.caseNumber || link.caseId,
             caseRecord?.title || "",
             link.personId,
             person?.name || "",
-            link.relationship
+            link.role
         ].join(" ").toLowerCase();
 
         return searchable.includes(query)
-            && (!selectedRelationship ||
-                link.relationship === selectedRelationship);
+            && (!selectedRelationship || link.role === selectedRelationship);
     });
 
     casePersonTableBody.innerHTML = filtered.map(link => {
-        const caseRecord = getCaseByNumber(link.caseNumber);
+        const caseRecord = apiCases.find(item => Number(item.caseId) === Number(link.caseId));
         const person = getPersonById(link.personId);
 
         return `
             <tr>
-                <td>${escapeHTML(link.caseNumber)}</td>
+                <td>${escapeHTML(caseRecord?.caseNumber || `Case ${link.caseId}`)}</td>
                 <td>${escapeHTML(caseRecord?.title || "Case unavailable")}</td>
                 <td>${escapeHTML(link.personId)}</td>
                 <td>${escapeHTML(person?.name || "Person unavailable")}</td>
-                <td>${escapeHTML(link.relationship)}</td>
-                <td>
-                    <button
-                        type="button"
-                        class="secondary-button"
-                        data-unlink-case-person
-                        data-case-number="${escapeHTML(link.caseNumber)}"
-                        data-person-id="${escapeHTML(link.personId)}">
-                        Unlink
-                    </button>
-                </td>
+                <td>${escapeHTML(link.role)}</td>
             </tr>
         `;
     }).join("");
 
     if (casePersonCount) {
         casePersonCount.textContent =
-            `${filtered.length} of ${demoCasePeople.length} associations`;
+            `${filtered.length} of ${apiCasePeople.length} associations`;
     }
 
     if (emptyCasePeople) {
+        emptyCasePeople.textContent = apiModuleMessage("casePeople");
         emptyCasePeople.hidden = filtered.length !== 0;
     }
 }
@@ -2509,14 +1798,19 @@ if (casePersonForm) {
     casePersonForm.addEventListener("submit", event => {
         event.preventDefault();
         if (!casePersonForm.reportValidity()) return;
+        if (moduleLoadState.casePeople !== "api" || moduleLoadState.people !== "api"
+            || casesSource !== "api") {
+            alert("Cases, people, and existing relationships must load successfully before saving this link.");
+            return;
+        }
 
         const data = new FormData(casePersonForm);
 
-        const caseNumber = String(data.get("caseNumber") || "").trim();
-        const personId = String(data.get("personId") || "").trim();
-        const relationship = String(data.get("relationship") || "").trim();
+        const caseId = apiId(data.get("caseNumber"));
+        const personId = apiId(data.get("personId"));
+        const role = String(data.get("role") || "").trim();
 
-        if (!getCaseByNumber(caseNumber)) {
+        if (!caseId || !apiCases.some(item => Number(item.caseId) === caseId)) {
             alert("Please select a valid case.");
             return;
         }
@@ -2526,9 +1820,9 @@ if (casePersonForm) {
             return;
         }
 
-        const duplicate = demoCasePeople.some(link =>
-            link.caseNumber === caseNumber &&
-            link.personId === personId
+        const duplicate = apiCasePeople.some(link =>
+            Number(link.caseId) === caseId &&
+            Number(link.personId) === personId
         );
 
         if (duplicate) {
@@ -2536,30 +1830,7 @@ if (casePersonForm) {
             return;
         }
 
-        demoCasePeople.push({
-            caseNumber,
-            personId,
-            relationship
-        });
-
-        closeCasePersonForm();
-
-        if (casePersonSearch) casePersonSearch.value = "";
-        if (casePersonRoleFilter) casePersonRoleFilter.value = "";
-
-        renderCasePeople();
-        renderPeople();
-
-        if (
-            selectedPersonId === personId &&
-            personDetailsPanel &&
-            !personDetailsPanel.hidden
-        ) {
-            const person = getPersonById(personId);
-            if (person) openPersonDetails(person);
-        }
-
-        alert("Person linked to case in demo mode. Not saved to the database.");
+        void saveCasePerson({ caseId, personId, role });
     });
 }
 
@@ -2570,70 +1841,262 @@ if (casePersonRoleFilter) {
     casePersonRoleFilter.addEventListener("change", renderCasePeople);
 }
 
-if (casePersonTableBody) {
-    casePersonTableBody.addEventListener("click", event => {
-        const button = event.target.closest("[data-unlink-case-person]");
-        if (!button) return;
-
-        const caseNumber = button.dataset.caseNumber;
-        const personId = button.dataset.personId;
-
-        const index = demoCasePeople.findIndex(link =>
-            link.caseNumber === caseNumber &&
-            link.personId === personId
-        );
-
-        if (index === -1) {
-            alert("Association not found.");
-            return;
-        }
-
-        const person = getPersonById(personId);
-
-        if (!confirm(
-            `Unlink ${person?.name || personId} from ${caseNumber}? ` +
-            "The person record will not be deleted."
-        )) {
-            return;
-        }
-
-        demoCasePeople.splice(index, 1);
-
-        renderCasePeople();
-        renderPeople();
-
-        if (
-            selectedPersonId === personId &&
-            personDetailsPanel &&
-            !personDetailsPanel.hidden &&
-            person
-        ) {
-            openPersonDetails(person);
-        }
-
-        alert("Association removed in demo mode. The person record remains.");
-    });
-}
 
 
 // ============================================================
 // INITIALIZATION
 // ============================================================
 
+async function loadApiPeople() {
+    try {
+        const rows = await CrimeVaultAPI.get("/people");
+        if (!Array.isArray(rows)) throw new Error("People API response must be an array.");
+        apiPeople = rows;
+        moduleLoadState.people = "api";
+    } catch (error) {
+        console.error("Failed to load people:", error);
+        apiPeople = [];
+        moduleLoadState.people = "error";
+    }
+    renderPeople();
+    populateCasePersonOptions();
+    renderCasePeople();
+    return moduleLoadState.people === "api";
+}
+
+async function loadApiInvestigators() {
+    try {
+        const rows = await CrimeVaultAPI.get("/investigators");
+        if (!Array.isArray(rows)) throw new Error("Investigators API response must be an array.");
+        apiInvestigators = rows;
+        moduleLoadState.investigators = "api";
+    } catch (error) {
+        console.error("Failed to load investigators:", error);
+        apiInvestigators = [];
+        moduleLoadState.investigators = "error";
+    }
+    renderInvestigators();
+    populateAssignmentOptions();
+    populateCustodyInvestigatorOptions();
+    renderAssignments();
+    updateDashboardFromApi();
+    return moduleLoadState.investigators === "api";
+}
+
+async function loadApiAssignments() {
+    try {
+        const rows = await CrimeVaultAPI.get("/assignments");
+        if (!Array.isArray(rows)) throw new Error("Assignments API response must be an array.");
+        apiAssignments = rows;
+        moduleLoadState.assignments = "api";
+    } catch (error) {
+        console.error("Failed to load assignments:", error);
+        apiAssignments = [];
+        moduleLoadState.assignments = "error";
+    }
+    renderAssignments();
+    renderInvestigators();
+    return moduleLoadState.assignments === "api";
+}
+
+async function saveAssignment(payload, assignmentId) {
+    if (moduleSaving.assignments) return;
+    moduleSaving.assignments = true;
+    const button = assignmentForm?.querySelector('[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+        const saved = assignmentId === null
+            ? await CrimeVaultAPI.post("/assignments", payload)
+            : await CrimeVaultAPI.put(`/assignments/${encodeURIComponent(assignmentId)}`, payload);
+        if (!saved || !apiId(saved.assignmentId)) throw new Error("The server did not return a saved assignment ID.");
+        await loadApiAssignments();
+        closeAssignmentForm();
+        if (assignmentSearch) assignmentSearch.value = "";
+        if (assignmentStatusFilter) assignmentStatusFilter.value = "";
+        renderAssignments();
+        alert(moduleLoadState.assignments === "api"
+            ? `Assignment ${assignmentId === null ? "created" : "updated"} successfully.`
+            : "The server confirmed the save, but the assignment list could not be refreshed.");
+    } catch (error) {
+        console.error("Failed to save assignment:", error);
+        alert(`Assignment was not saved: ${error.message}`);
+    } finally {
+        moduleSaving.assignments = false;
+        if (button) button.disabled = false;
+    }
+}
+
+async function loadApiCasePeople() {
+    try {
+        const rows = await CrimeVaultAPI.get("/case-people");
+        if (!Array.isArray(rows)) throw new Error("Case-person API response must be an array.");
+        apiCasePeople = rows;
+        moduleLoadState.casePeople = "api";
+    } catch (error) {
+        console.error("Failed to load case-person relationships:", error);
+        apiCasePeople = [];
+        moduleLoadState.casePeople = "error";
+    }
+    renderCasePeople();
+    renderPeople();
+    return moduleLoadState.casePeople === "api";
+}
+
+function updateDashboardFromApi() {
+    const setMetric = (valueId, value, label) => {
+        const valueNode = document.getElementById(valueId);
+        const descriptionNode = valueNode?.parentElement?.querySelector("p");
+        if (valueNode) valueNode.textContent = value;
+        if (descriptionNode) descriptionNode.textContent = label;
+    };
+    setMetric("total-cases",
+        casesSource === "api" ? String(apiCases.length) : "Unavailable",
+        casesSource === "api" ? "Backend records" : "Backend unavailable");
+    setMetric("total-investigators",
+        moduleLoadState.investigators === "api" ? String(apiInvestigators.length) : "Unavailable",
+        moduleLoadState.investigators === "api" ? "Backend records" : "Backend unavailable");
+    const source = document.getElementById("dashboard-source");
+    if (source) {
+        const casesLabel = casesSource === "api" ? "Cases connected" : "Cases unavailable";
+        const investigatorsLabel = moduleLoadState.investigators === "api"
+            ? "Investigators connected" : "Investigators unavailable";
+        source.textContent = `${casesLabel} · ${investigatorsLabel}`;
+    }
+
+    const recent = document.getElementById("recent-cases");
+    if (!recent) return;
+    recent.replaceChildren();
+    if (casesSource !== "api") {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 5;
+        cell.textContent = "Recent cases are unavailable because the backend could not be reached.";
+        row.appendChild(cell);
+        recent.appendChild(row);
+        return;
+    }
+    apiCases.slice(-3).reverse().forEach(record => {
+        const row = document.createElement("tr");
+        [record.caseNumber, record.title, record.caseType, record.priority, record.status]
+            .forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value ?? "";
+                row.appendChild(cell);
+            });
+        recent.appendChild(row);
+    });
+    if (apiCases.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 5;
+        cell.textContent = "No case records are available.";
+        row.appendChild(cell);
+        recent.appendChild(row);
+    }
+    document.dispatchEvent(new Event("crimevault:dashboard-refresh"));
+}
+
+async function savePerson(payload, personId) {
+    if (moduleSaving.people) return;
+    moduleSaving.people = true;
+    const button = document.getElementById("save-person-button");
+    if (button) button.disabled = true;
+    try {
+        const saved = personId === null
+            ? await CrimeVaultAPI.post("/people", payload)
+            : await CrimeVaultAPI.put(`/people/${encodeURIComponent(personId)}`, payload);
+        if (!saved || !apiId(saved.personId)) throw new Error("The server did not return a saved person ID.");
+        await loadApiPeople();
+        closePersonForm();
+        renderPeople();
+        if (personId !== null) {
+            selectedPersonId = saved.personId;
+            const fresh = getPersonById(saved.personId);
+            if (fresh) openPersonDetails(fresh);
+        }
+        alert(moduleLoadState.people === "api"
+            ? `Person ${personId === null ? "registered" : "updated"} successfully.`
+            : "The server confirmed the save, but the people list could not be refreshed.");
+    } catch (error) {
+        console.error("Failed to save person:", error);
+        alert(`Person was not saved: ${error.message}`);
+    } finally {
+        moduleSaving.people = false;
+        if (button) button.disabled = false;
+    }
+}
+
+async function saveInvestigator(payload, investigatorId) {
+    if (moduleSaving.investigators) return;
+    moduleSaving.investigators = true;
+    const button = document.getElementById("save-investigator-button");
+    if (button) button.disabled = true;
+    try {
+        const saved = investigatorId === null
+            ? await CrimeVaultAPI.post("/investigators", payload)
+            : await CrimeVaultAPI.put(`/investigators/${encodeURIComponent(investigatorId)}`, payload);
+        if (!saved || !apiId(saved.investigatorId)) throw new Error("The server did not return a saved investigator ID.");
+        await loadApiInvestigators();
+        closeInvestigatorForm();
+        if (investigatorId !== null) {
+            selectedInvestigatorId = saved.investigatorId;
+            const fresh = getInvestigatorById(saved.investigatorId);
+            if (fresh) openInvestigatorDetails(fresh);
+        }
+        alert(moduleLoadState.investigators === "api"
+            ? `Investigator ${investigatorId === null ? "registered" : "updated"} successfully.`
+            : "The server confirmed the save, but the investigator list could not be refreshed.");
+    } catch (error) {
+        console.error("Failed to save investigator:", error);
+        alert(`Investigator was not saved: ${error.message}`);
+    } finally {
+        moduleSaving.investigators = false;
+        if (button) button.disabled = false;
+    }
+}
+
+async function saveCasePerson(payload) {
+    if (moduleSaving.casePeople) return;
+    moduleSaving.casePeople = true;
+    const button = casePersonForm?.querySelector('[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+        await CrimeVaultAPI.post("/case-people", payload);
+        await loadApiCasePeople();
+        closeCasePersonForm();
+        alert(moduleLoadState.casePeople === "api"
+            ? "Case-person relationship saved successfully."
+            : "The server confirmed the relationship save, but the list could not be refreshed.");
+    } catch (error) {
+        console.error("Failed to save case-person relationship:", error);
+        alert(`Relationship was not saved: ${error.message}`);
+    } finally {
+        moduleSaving.casePeople = false;
+        if (button) button.disabled = false;
+    }
+}
+
 
 populateInvestigatorFilters();
 populateAssignmentOptions();
 populateCasePersonOptions();
 
-// Render existing demo data immediately.
+// Render honest loading states until the API responds.
 renderCases();
 renderInvestigators();
 renderAssignments();
 renderPeople();
 renderCasePeople();
+updateDashboardFromApi();
 
-// Then load cases from the Java backend.
-loadApiCases();
+// Load only the resources supported by existing backend routes.
+void Promise.all([
+    loadApiCases(),
+    loadApiPeople(),
+    loadApiInvestigators(),
+    loadApiAssignments(),
+    loadApiCasePeople()
+]);
 
 
 activateView("dashboard");
